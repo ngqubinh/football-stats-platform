@@ -1,0 +1,6 @@
+@FSP.WebApi_HostAddress = http://localhost:5046
+
+GET {{FSP.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
