@@ -1,6 +1,6 @@
 # ⚽ Football Stats Platform
 
-A full-stack platform for collecting, processing, and visualizing top-tier football league statistics. This project is in its initial setup phase, establishing the foundation for automated data crawling, RESTful APIs, and an interactive dashboard.
+A full-stack platform for collecting, processing, and visualizing top-tier football league statistics. The project is currently in its initial setup phase, establishing the foundation for data crawling, RESTful APIs, and an interactive dashboard.
 
 ![.NET](https://img.shields.io/badge/.NET-8-512BD4?logo=dotnet)
 ![Next.js](https://img.shields.io/badge/Next.js-14-000000?logo=nextdotjs) 
@@ -11,7 +11,6 @@ A full-stack platform for collecting, processing, and visualizing top-tier footb
 ## 🚀 Features (Planned)
 
 ### 🔄 Data Pipeline
-- **Automated Crawling**: Scheduled data collection from FBref (to be implemented)
 - **Data Processing**: Clean and transform raw football statistics
 - **PostgreSQL Database**: Optimized storage
 
@@ -20,14 +19,12 @@ A full-stack platform for collecting, processing, and visualizing top-tier footb
 - **Repository Pattern** & **Unit of Work** initialized
 - **RESTful API** scaffolding
 - **Entity Framework Core** for database operations
-- **xUnit** test project setup
 - **Background Services** for future scheduled tasks
 
 ### 🎨 Frontend (Next.js + TypeScript)
 - **Modern React** with TypeScript initialized
 - **Responsive Dashboard** placeholder
 - **API Integration** setup for future real-time updates
-- **Component Testing** with Testing Library
 
 ### 🛠️ DevOps & Infrastructure (Planned)
 - **Docker** containerization setup
@@ -98,7 +95,7 @@ football-stats-platform/
 2. **Run with Docker (Recommended)**
    ```bash
    # Build and start all services using docker-compose
-   docker-compose -f infra/docker/docker-compose.yml up --build
+   docker compose -f infra/docker/docker-compose.yml up --build
 
    # Alternatively, build and run only the backend manually (if Dockerfile is not yet configured for port 5000):
    docker build -f infra/docker/FSF.Dockerfile -t football-stats-backend .
@@ -127,20 +124,38 @@ football-stats-platform/
    npm run dev
    ```
 
-## 📡 API Endpoints (Planned)
-The backend will provide a RESTful API for accessing football statistics. Initial endpoints include:
+## 📡 API Endpoints
 
-| Method | Endpoint                          | Description                              |
-|--------|-----------------------------------|------------------------------------------|
-| GET    | `/api/players`                   | Retrieve a list of players               |
-| GET    | `/api/players/{id}`              | Retrieve a specific player by ID         |
-| GET    | `/api/matches`                   | Retrieve a list of matches               |
-| GET    | `/api/matches/{id}`              | Retrieve a specific match by ID          |
-| GET    | `/api/teams`                     | Retrieve a list of teams                 |
-| GET    | `/api/teams/{id}`                | Retrieve a specific team by ID           |
-| POST   | `/api/statistics/sync`           | Trigger a manual data sync from FBref    |
+The backend provides RESTful APIs for accessing football statistics and data crawling operations.
 
-API documentation will be available at `http://localhost:5000/swagger` once the backend is fully implemented.
+### Core Statistics
+| Method | Endpoint | Description |
+|--------|-----------|-------------|
+| GET | `/api/league` | Get leagues |
+| GET | `/api/club/league/{leagueId}/clubs` | Get clubs by league id |
+| GET | `/api/club/{clubId}/trends` | Get club trend |
+| GET | `/api/player/club/{clubId}/players` | Get players by club id |
+| GET | `/api/player/club/{clubId}/players/current` | Get current players by club id |
+| GET | `/api/player/{playerRefId}/season-comparisons` | Compare player with previous seasons |
+| GET | `/api/player/{playerRefId}/current-previous-comparison` | Get player current vs previous season |
+| GET | `/api/player/{playerRefId}/goalkeeping` | Get current goalkeeping by player |
+| GET | `/api/player/{playerRefId}/shooting` | Get current shooting by player |
+
+### Data Crawling & Management
+| Method | Endpoint | Description |
+|--------|-----------|-------------|
+| GET | `/api/crawljobs/premier-league` | Get premier league data |
+| GET | `/api/simplecrawler/players` | Extract players data |
+| GET | `/api/simplecrawler/goalkeeping` | Extract goalkeeping data |
+| GET | `/api/simplecrawler/shooting` | Extract shooting data |
+| GET | `/api/simplecrawler/match-logs` | Extract match logs |
+| GET | `/api/simplecrawler/player-details` | Extract player details |
+| GET | `/api/simplecrawler/raw-html` | Get raw HTML |
+| GET | `/api/simplecrawler/all-data` | Extract all data |
+| GET | `/api/simplecrawler/download-json` | Download JSON |
+| GET | `/api/simplecrawler/download-zip` | Download ZIP |
+
+API documentation is available at `http://localhost:5000/swagger` when the backend is running.
 
 ## 🧪 Running Tests
 ### Backend Tests
