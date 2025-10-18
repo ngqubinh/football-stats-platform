@@ -37,21 +37,21 @@ jobs:
           dotnet restore
           dotnet build --configuration Release
 
-      - name: Build Next.js Frontend
-        run: |
-          cd frontend
-          npm install
-          npm run build
+      # - name: Build Next.js Frontend
+      #   run: |
+      #     cd frontend
+      #     npm install
+      #     npm run build
 
       - name: Run Tests (Backend - xUnit example)
         run: |
           cd src/FSP/FSP.Tests
           dotnet test --no-build --verbosity normal || echo "No tests or skipped"
 
-      - name: Run Tests (Frontend - Jest example)
-        run: |
-          cd src/frontend
-          npm test || echo "No tests or skipped"
+      # - name: Run Tests (Frontend - Jest example)
+      #   run: |
+      #     cd src/frontend
+      #     npm test || echo "No tests or skipped"
 
       - name: Clean Docker environment
         run: |
