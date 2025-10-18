@@ -107,6 +107,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container  # Use containerd-based driver for GHA cache support
+
       - name: Extract metadata (tags, labels)
         id: meta
         # uses: docker/metadata-action@dbef88086f6cef02e264edb7dbf63250c17cf6de9 it make "unable to find version" error
@@ -122,7 +127,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          context: infra/docker
+          context: . # Root context to include src/FSP
           file: infra/docker/FSP.Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
