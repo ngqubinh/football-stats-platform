@@ -58,7 +58,7 @@ public class DataStorageService : IDataStorageService
             string jsonString = JsonSerializer.Serialize(jsonData, options);
             await File.WriteAllTextAsync(fullPath, jsonString);
 
-            this._logger.LogInformation("Saved {Count} {DataType} records for {Label} to {Path}", 
+            this._logger.LogInformation("Saved {Count} {DataType} records for {Label} to {Path}",
                 data.Count, dataType, label, fullPath);
 
             return fullPath;
@@ -99,6 +99,7 @@ public class DataStorageService : IDataStorageService
         return filePath;
     }
 
+    #region helpers
     private string SanitizeFileName(string fileName)
     {
         if (string.IsNullOrEmpty(fileName)) return "unknown";
@@ -109,4 +110,5 @@ public class DataStorageService : IDataStorageService
             .Replace(" ", "_")
             .ToLower();
     }
+    #endregion
 }

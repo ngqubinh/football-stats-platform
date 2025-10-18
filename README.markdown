@@ -37,16 +37,15 @@ A full-stack platform for collecting, processing, and visualizing top-tier footb
 ```
 ┌─────────────────┐ ┌──────────────────┐ ┌─────────────────┐
 │ Next.js         │ │ .NET 8 API       │ │ PostgreSQL      │
-│ Dashboard       │◄──►│ Backend         │◄──►│ Database       │
-│ (Vercel)        │ │ (EC2)           │ │ (RDS)           │
+│ Dashboard       │◄──►│ Backend       │ │◄──►│ Database   │
+│ (Vercel)        │ │ (EC2)            │ │ (RDS)           │
 └─────────────────┘ └──────────────────┘ └─────────────────┘
-          │                  │                  │
-          │                  │                  │
+          │                  │                  │         │  
+          │                  │                  │         │
           └───────────────────────┼───────────────────────┘
                                  │
                         ┌───────────┴───────────┐
                         │     FBref Crawler     │
-                        │ (Scheduled Daily)     │
                         └───────────────────────┘
 ```
 
@@ -145,15 +144,18 @@ The backend provides RESTful APIs for accessing football statistics and data cra
 | Method | Endpoint | Description |
 |--------|-----------|-------------|
 | GET | `/api/crawljobs/premier-league` | Get premier league data |
-| GET | `/api/simplecrawler/players` | Extract players data |
-| GET | `/api/simplecrawler/goalkeeping` | Extract goalkeeping data |
-| GET | `/api/simplecrawler/shooting` | Extract shooting data |
+| GET | `/api/simplecrawler/players` | Extract players |
+| GET | `/api/simplecrawler/goalkeeping` | Extract goalkeeping |
+| GET | `/api/simplecrawler/shooting` | Extract shooting |
 | GET | `/api/simplecrawler/match-logs` | Extract match logs |
 | GET | `/api/simplecrawler/player-details` | Extract player details |
 | GET | `/api/simplecrawler/raw-html` | Get raw HTML |
 | GET | `/api/simplecrawler/all-data` | Extract all data |
+| GET | `/api/simplecrawler/squad-standard` | Extract squad information from league |
 | GET | `/api/simplecrawler/download-json` | Download JSON |
 | GET | `/api/simplecrawler/download-zip` | Download ZIP |
+| GET | `/api/simplecrawler/download-squad-standard-json` | Download squad standard data as JSON |
+| GET | `/api/simplecrawler/download-squad-standard-zip` | Download squad standard data as ZIP |
 
 API documentation is available at `http://localhost:5000/swagger` when the backend is running.
 

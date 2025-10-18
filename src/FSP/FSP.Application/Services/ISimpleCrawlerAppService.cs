@@ -1,4 +1,3 @@
-// FSP.Application.Services
 using FSP.Application.DTOs.Core;
 using FSP.Application.DTOs.Football;
 using FSP.Application.Mappings;
@@ -12,6 +11,7 @@ namespace FSP.Application.Services;
 public interface ISimpleCrawlerAppService
 {
     Task<Result<List<PlayerDto>>> ExtractPlayersAsync(string url, string selector);
+    Task<Result<List<SquadStandardDto>>> ExtractSquadStandardFromUrlAsync(string url, string selector);
     Task<Result<List<GoalkeepingDto>>> ExtractGoalkeepingAsync(string url, string selector);
     Task<Result<List<ShootingDto>>> ExtractShootingAsync(string url, string selector);
     Task<Result<List<MatchLogDto>>> ExtractMatchLogsAsync(string url, string selector);
@@ -26,6 +26,7 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
     private readonly ICoreMappingService _mappingService;
     private readonly IPlayerMappingService _playerMappingService;
     private readonly IMatchLogMappingService _matchLogMappingService;
+    private readonly ISquadStandardMappingService _squadMappingService;
     private readonly ILogger<SimpleCrawlerAppService> _logger;
 
     public SimpleCrawlerAppService(
@@ -33,6 +34,7 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
         ICoreMappingService mappingService,
         ILogger<SimpleCrawlerAppService> logger,
         IPlayerMappingService playerMappingService,
+        ISquadStandardMappingService squadMappingService,
         IMatchLogMappingService matchLogMappingService)
     {
         this._crawlerService = crawlerService;
@@ -40,6 +42,7 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
         this._logger = logger;
         this._playerMappingService = playerMappingService;
         this._matchLogMappingService = matchLogMappingService;
+        this._squadMappingService = squadMappingService;
     }
 
     public async Task<Result<List<PlayerDto>>> ExtractPlayersAsync(string url, string selector)
@@ -47,7 +50,7 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
         try
         {
             _logger.LogInformation("Extracting players from {Url}", url);
-            
+
             var domainResult = await _crawlerService.ExtractPlayersFromUrlAsync(url, selector);
             if (!domainResult.Success)
             {
@@ -55,7 +58,7 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
             }
 
             var playerDtos = this._playerMappingService.ToPlayerDtos(domainResult.Data!).ToList();
-            
+
             _logger.LogInformation("Successfully extracted {Count} players from {Url}", playerDtos.Count, url);
             return Result<List<PlayerDto>>.Ok(playerDtos);
         }
@@ -66,12 +69,36 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
         }
     }
 
+    public async Task<Result<List<SquadStandardDto>>> ExtractSquadStandardFromUrlAsync(string url, string selector)
+    {
+        try
+        {
+            this._logger.LogInformation("Extracting squads from {Url}", url);
+
+            var domainResult = await _crawlerService.ExtractSquadStandardFromUrlAsync(url, selector);
+            if (!domainResult.Success)
+            {
+                return Result<List<SquadStandardDto>>.Fail(domainResult.Message!);
+            }
+
+            var squadDtos = this._squadMappingService.ToSquadStandardDtos(domainResult.Data!).ToList();
+
+            this._logger.LogInformation("Successfully extracted {Count} squads from {Url}", squadDtos.Count, url);
+            return Result<List<SquadStandardDto>>.Ok(squadDtos);
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogError(ex, "Error extracting squads from {Url}: {Message}", url, ex.Message);
+            return Result<List<SquadStandardDto>>.Fail($"Error extracting squads: {ex.Message}");
+        }
+    }
+
     public async Task<Result<List<GoalkeepingDto>>> ExtractGoalkeepingAsync(string url, string selector)
     {
         try
         {
             _logger.LogInformation("Extracting goalkeeping data from {Url}", url);
-            
+
             var domainResult = await _crawlerService.ExtractGoalkeepingFromUrlAsync(url, selector);
             if (!domainResult.Success)
             {
@@ -79,7 +106,7 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
             }
 
             var goalkeepingDtos = this._playerMappingService.ToGoalkeepingDtos(domainResult.Data!).ToList();
-            
+
             _logger.LogInformation("Successfully extracted {Count} goalkeeping records from {Url}", goalkeepingDtos.Count, url);
             return Result<List<GoalkeepingDto>>.Ok(goalkeepingDtos);
         }
@@ -95,7 +122,7 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
         try
         {
             _logger.LogInformation("Extracting shooting data from {Url}", url);
-            
+
             var domainResult = await _crawlerService.ExtractShootingFromUrlAsync(url, selector);
             if (!domainResult.Success)
             {
@@ -103,7 +130,7 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
             }
 
             var shootingDtos = this._playerMappingService.ToShootingDtos(domainResult.Data!).ToList();
-            
+
             _logger.LogInformation("Successfully extracted {Count} shooting records from {Url}", shootingDtos.Count, url);
             return Result<List<ShootingDto>>.Ok(shootingDtos);
         }
@@ -119,7 +146,7 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
         try
         {
             this._logger.LogInformation("Extracting match logs from {Url}", url);
-            
+
             var domainResult = await this._crawlerService.ExtractMatchLogFromUrlAsync(url, selector);
             if (!domainResult.Success)
             {
@@ -143,16 +170,16 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
         try
         {
             this._logger.LogInformation("Extracting player details from {Url}", url);
-            
+
             var domainResult = await this._crawlerService.ExtractPlayerDetailsFromUrlAsync(url, selector, clubName);
             if (!domainResult.Success)
             {
                 return Result<PlayerDetails>.Fail(domainResult.Message!);
             }
 
-            this._logger.LogInformation("Successfully extracted player details for {PlayerName} from {Url}", 
+            this._logger.LogInformation("Successfully extracted player details for {PlayerName} from {Url}",
                 domainResult.Data!.FullName, url);
-                
+
             return Result<PlayerDetails>.Ok(domainResult.Data!);
         }
         catch (Exception ex)
@@ -167,16 +194,16 @@ public class SimpleCrawlerAppService : ISimpleCrawlerAppService
         try
         {
             this._logger.LogInformation("Fetching raw HTML from {Url}", url);
-            
+
             var domainResult = await this._crawlerService.GetRawHtmlAsync(url);
             if (!domainResult.Success)
             {
                 return Result<string>.Fail(domainResult.Message!);
             }
 
-            this._logger.LogInformation("Successfully fetched HTML from {Url} ({Length} characters)", 
+            this._logger.LogInformation("Successfully fetched HTML from {Url} ({Length} characters)",
                 url, domainResult.Data!.Length);
-                
+
             return Result<string>.Ok(domainResult.Data!);
         }
         catch (Exception ex)

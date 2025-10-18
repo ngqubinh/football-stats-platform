@@ -1,6 +1,6 @@
-import { Club, ClubTrend, EnhancedTeamDataResponse, Goalkeeping, League, Player, PlayerSeasonComparison, Shooting, UrlInformation } from "@/types/football_type";
+import { Club, ClubTrend, EnhancedTeamDataResponse, EnhancedSquadResponse, Goalkeeping, League, Player, PlayerSeasonComparison, Shooting, SquadStandardDto, UrlInformation } from "@/types/football_type";
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { crawlAllDataService, crawlPremierLeagueService, crawlRomaniaLiga1Service, downloadJsonService, downloadZipService, fecthComparedSeasonPlayerService, fetchClubsService, fetchClubTrendService, fetchCurrentPlayersService, fetchGoalkeepingByPlayerService, fetchLeaguesService, fetchPlayersService, fetchShootingByPlayerSerivce, triggerFileDownload } from "@/services/football_service";
+import { crawlAllDataService, crawlPremierLeagueService, crawlRomaniaLiga1Service, downloadJsonService, downloadSquadStandardJsonService, downloadSquadStandardZipService, downloadZipService, extractSquadStandardService, fecthComparedSeasonPlayerService, fetchClubsService, fetchClubTrendService, fetchCurrentPlayersService, fetchGoalkeepingByPlayerService, fetchLeaguesService, fetchPlayersService, fetchShootingByPlayerSerivce, triggerFileDownload } from "@/services/football_service";
 import { toast } from "sonner";
 
 interface FootballState {
@@ -24,6 +24,12 @@ interface FootballState {
     extractAllData: EnhancedTeamDataResponse | null;
     extractAllDataStatus: "idle" | "loading" | "succeeded" | "failed";
     extractAllDataError: string | null;
+
+    extractSquadStandard: EnhancedSquadResponse | null;
+    extractSquadStandardStatus: "idle" | "loading" | "succeeded" | "failed";
+    extractSquadStandardError: string | null;
+    downloadSquadStandardStatus: "idle" | "loading" | "succeeded" | "failed";
+    downloadSquadStandardError: string | null;
 }
 
 const initialState: FootballState = {
@@ -47,6 +53,12 @@ const initialState: FootballState = {
     extractAllData: null,
     extractAllDataStatus: "idle",
     extractAllDataError: null,
+
+    extractSquadStandard: null,
+    extractSquadStandardStatus: "idle",
+    extractSquadStandardError: null,
+    downloadSquadStandardStatus: "idle",
+    downloadSquadStandardError: null,
 };
 
 // FOOTBALL SLICES
@@ -101,6 +113,13 @@ export const extractAllDataSlice = createAsyncThunk(
   }
 );
 
+export const extractSquadStandardSlice = createAsyncThunk(
+  "football/extractSquadStandard",
+  async ({ url, selector }: { url: string; selector?: string }) => {
+    return await extractSquadStandardService(url, selector);
+  }
+);
+
 export const downloadJsonSlice = createAsyncThunk(
   "football/downloadJson",
   async ({ url, id }: { url: string; id: string }, { dispatch }) => {
@@ -130,6 +149,38 @@ export const downloadZipSlice = createAsyncThunk(
       return { url, id, success: true };
     } catch (error) {
       toast.error("Failed to download ZIP file");
+      throw error;
+    }
+  }
+);
+
+export const downloadSquadStandardJsonSlice = createAsyncThunk(
+  "football/downloadSquadStandardJson",
+  async ({ url, selector }: { url: string; selector?: string }, { dispatch }) => {
+    try {
+      const blob = await downloadSquadStandardJsonService(url, selector);
+      const filename = `squad_standard_${Date.now()}.json`;
+      triggerFileDownload(blob, filename);
+      // toast.success("Squad standard JSON file downloaded successfully");
+      return { url, selector, success: true };
+    } catch (error) {
+      toast.error("Failed to download squad standard JSON file");
+      throw error;
+    }
+  }
+);
+
+export const downloadSquadStandardZipSlice = createAsyncThunk(
+  "football/downloadSquadStandardZip",
+  async ({ url, selector }: { url: string; selector?: string }, { dispatch }) => {
+    try {
+      const blob = await downloadSquadStandardZipService(url, selector);
+      const filename = `squad_standard_${Date.now()}.zip`;
+      triggerFileDownload(blob, filename);
+      // toast.success("Squad standard ZIP file downloaded successfully");
+      return { url, selector, success: true };
+    } catch (error) {
+      toast.error("Failed to download squad standard ZIP file");
       throw error;
     }
   }
@@ -183,6 +234,12 @@ const footballSlice = createSlice({
       state.extractAllData = null;
       state.extractAllDataStatus = "idle";
       state.extractAllDataError = null;
+    },
+
+    resetExtractSquadStandard: (state) => {
+      state.extractSquadStandard = null;
+      state.extractSquadStandardStatus = "idle";
+      state.extractSquadStandardError = null;
     },
   },
   extraReducers: (builder) => {
@@ -318,6 +375,19 @@ const footballSlice = createSlice({
         state.extractAllDataStatus = "failed";
         state.extractAllDataError = action.error.message || "Failed to extract all data";
       })
+
+      .addCase(extractSquadStandardSlice.pending, (state) => {
+        state.extractSquadStandardStatus = "loading";
+        state.extractSquadStandardError = null;
+      })
+      .addCase(extractSquadStandardSlice.fulfilled, (state, action) => {
+        state.extractSquadStandardStatus = "succeeded";
+        state.extractSquadStandard = action.payload;
+      })
+      .addCase(extractSquadStandardSlice.rejected, (state, action) => {
+        state.extractSquadStandardStatus = "failed";
+        state.extractSquadStandardError = action.error.message || "Failed to extract squad standard data";
+      })
       
       // Download JSON cases
       .addCase(downloadJsonSlice.pending, (state) => {
@@ -341,9 +411,33 @@ const footballSlice = createSlice({
       .addCase(downloadZipSlice.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.error.message || "Failed to download ZIP file";
+      })
+
+      .addCase(downloadSquadStandardJsonSlice.pending, (state) => {
+        state.downloadSquadStandardStatus = "loading";
+        state.downloadSquadStandardError = null;
+      })
+      .addCase(downloadSquadStandardJsonSlice.fulfilled, (state, action) => {
+        state.downloadSquadStandardStatus = "succeeded";
+      })
+      .addCase(downloadSquadStandardJsonSlice.rejected, (state, action) => {
+        state.downloadSquadStandardStatus = "failed";
+        state.downloadSquadStandardError = action.error.message || "Failed to download squad standard JSON file";
+      })
+      
+      .addCase(downloadSquadStandardZipSlice.pending, (state) => {
+        state.downloadSquadStandardStatus = "loading";
+        state.downloadSquadStandardError = null;
+      })
+      .addCase(downloadSquadStandardZipSlice.fulfilled, (state, action) => {
+        state.downloadSquadStandardStatus = "succeeded";
+      })
+      .addCase(downloadSquadStandardZipSlice.rejected, (state, action) => {
+        state.downloadSquadStandardStatus = "failed";
+        state.downloadSquadStandardError = action.error.message || "Failed to download squad standard ZIP file";
       });
   },
 });
 
-export const { setSelectedLeagueId, setSelectedClubId, setPlayerRefId, resetCrawlData, resetExtractAllData } = footballSlice.actions;
+export const { setSelectedLeagueId, setSelectedClubId, setPlayerRefId, resetCrawlData, resetExtractAllData, resetExtractSquadStandard } = footballSlice.actions;
 export default footballSlice.reducer;

@@ -53,42 +53,5 @@ namespace FSP.WebApi.Controllers
                 return StatusCode(500, new { Message = "Internal server error.", Error = ex.Message });
             }
         }
-
-        [HttpGet("romania-liga1")]
-        public async Task<ActionResult<List<URLInformation>>> GetRomaniaLiga1Crawl() 
-        {
-            string correlationId = Guid.NewGuid().ToString();
-            using var scope = _logger.BeginScope(new Dictionary<string, object>
-            {
-                ["CorrelationId"] = correlationId,
-                ["Endpoint"] = nameof(GetRomaniaLiga1Crawl)
-            });
-
-            _logger.LogInformation("Starting crawl job for Romania Liga 1");
-
-            try
-            {
-                var result = await _crawlingService.CrawlRomaniaLiga1Async();
-                if (!result.Success)
-                {
-                    _logger.LogWarning("Failed to start Romania Liga 1 crawl job: {Message}", result.Message);
-                    return BadRequest(result.Message ?? "Failed to start Romania Liga 1 crawl job.");
-                }
-
-                if (result.Data == null || !result.Data.Any())
-                {
-                    _logger.LogWarning("No data retrieved for Romania Liga 1 crawl job");
-                    return Ok(new List<URLInformation>());
-                }
-
-                _logger.LogInformation("Successfully processed Romania Liga 1 crawl job with {Count} URL statuses", result.Data.Count);
-                return Ok(result.Data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing Romania Liga 1 crawl job: {Message}", ex.Message);
-                return StatusCode(500, new { Message = "Internal server error.", Error = ex.Message });
-            }
-        }
     }
 }

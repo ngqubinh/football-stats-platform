@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FSP.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251010163359_InitMigration")]
+    [Migration("20251018113713_InitMigration")]
     partial class InitMigration
     {
         /// <inheritdoc />
@@ -225,6 +225,24 @@ namespace FSP.Infrastructure.Data.Migrations
                     b.Property<int>("ClubId")
                         .HasColumnType("integer");
 
+                    b.Property<float>("ExpectedAssistedGoals")
+                        .HasColumnType("real");
+
+                    b.Property<string>("ExpectedAssistedGoalsPer90")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<float>("ExpectedGoals")
+                        .HasColumnType("real");
+
+                    b.Property<string>("ExpectedGoalsPer90")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ExpectedGoalsPlusAssistedGoalsPer90")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("Goals")
                         .HasColumnType("integer");
 
@@ -255,6 +273,20 @@ namespace FSP.Infrastructure.Data.Migrations
                     b.Property<string>("NineteenMinutes")
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)");
+
+                    b.Property<float>("NonPenaltyExpectedGoals")
+                        .HasColumnType("real");
+
+                    b.Property<string>("NonPenaltyExpectedGoalsPer90")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<float>("NonPenaltyExpectedGoalsPlusAssistedGoals")
+                        .HasColumnType("real");
+
+                    b.Property<string>("NonPenaltyExpectedGoalsPlusAssistedGoalsPer90")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<int>("NonPenaltyGoals")
                         .HasColumnType("integer");
@@ -288,6 +320,15 @@ namespace FSP.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<int>("ProgressiveCarries")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProgressivePasses")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProgressiveReceptions")
+                        .HasColumnType("integer");
 
                     b.Property<int>("RedCards")
                         .HasColumnType("integer");

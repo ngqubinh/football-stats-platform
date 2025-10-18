@@ -25,7 +25,7 @@ public class SimpleCrawlerController : ControllerBase
 
     [HttpGet("players")]
     public async Task<ActionResult<List<PlayerDto>>> ExtractPlayers(
-        [FromQuery] string url, 
+        [FromQuery] string url,
         [FromQuery] string selector = "//div[contains(@id, 'div_stats_standard')]//table")
     {
         string correlationId = Guid.NewGuid().ToString();
@@ -64,7 +64,7 @@ public class SimpleCrawlerController : ControllerBase
 
     [HttpGet("goalkeeping")]
     public async Task<ActionResult<List<GoalkeepingDto>>> ExtractGoalkeeping(
-        [FromQuery] string url, 
+        [FromQuery] string url,
         [FromQuery] string selector = "//div[contains(@id, 'div_stats_keeper')]//table")
     {
         string correlationId = Guid.NewGuid().ToString();
@@ -103,7 +103,7 @@ public class SimpleCrawlerController : ControllerBase
 
     [HttpGet("shooting")]
     public async Task<ActionResult<List<ShootingDto>>> ExtractShooting(
-        [FromQuery] string url, 
+        [FromQuery] string url,
         [FromQuery] string selector = "//div[contains(@id, 'div_stats_shooting')]//table")
     {
         string correlationId = Guid.NewGuid().ToString();
@@ -142,7 +142,7 @@ public class SimpleCrawlerController : ControllerBase
 
     [HttpGet("match-logs")]
     public async Task<ActionResult<List<MatchLogDto>>> ExtractMatchLogs(
-        [FromQuery] string url, 
+        [FromQuery] string url,
         [FromQuery] string selector = "//table[contains(@id, 'matchlogs')]")
     {
         string correlationId = Guid.NewGuid().ToString();
@@ -210,9 +210,9 @@ public class SimpleCrawlerController : ControllerBase
                 return BadRequest(result.Message ?? "Failed to extract player details.");
             }
 
-            _logger.LogInformation("Successfully extracted player details for {PlayerName}", 
+            _logger.LogInformation("Successfully extracted player details for {PlayerName}",
                 result.Data?.FullName ?? "Unknown");
-                
+
             return Ok(result.Data);
         }
         catch (Exception ex)
@@ -287,13 +287,13 @@ public class SimpleCrawlerController : ControllerBase
             }
 
             // Create enhanced response
-            EnhancedTeamDataResponse response = new EnhancedTeamDataResponse
+            var response = new EnhancedTeamDataResponse
             {
                 Data = result.Data!,
                 DownloadLinks = new
                 {
-                    Json = Url.Action("DownloadJSON", new { url, id, }),
-                    Zip = Url.Action("DownloadZip", new { url, id })
+                    Json = Url.Action(nameof(DownloadJSON), null, new { url, id }, Request.Scheme),
+                    Zip = Url.Action(nameof(DownloadZip), null, new { url, id }, Request.Scheme)
                 }
             };
 
@@ -350,7 +350,7 @@ public class SimpleCrawlerController : ControllerBase
         try
         {
             var result = await _crawlerAppService.ExtractAllDataAsync(url, id);
-            
+
             if (!result.Success)
             {
                 return BadRequest(result.Message ?? "Failed to extract data.");
@@ -364,8 +364,8 @@ public class SimpleCrawlerController : ControllerBase
                 using (var entryStream = mainEntry.Open())
                 using (var streamWriter = new StreamWriter(entryStream))
                 {
-                    var json = JsonSerializer.Serialize(result.Data, new JsonSerializerOptions 
-                    { 
+                    var json = JsonSerializer.Serialize(result.Data, new JsonSerializerOptions
+                    {
                         WriteIndented = true,
                         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                     });
@@ -381,13 +381,156 @@ public class SimpleCrawlerController : ControllerBase
 
             memoryStream.Seek(0, SeekOrigin.Begin);
             var fileName = $"{SanitizeFileName(result.Data.TeamName ?? "team")}_complete_{DateTime.UtcNow:yyyyMMddHHmmss}.zip";
-            
+
             return File(memoryStream.ToArray(), "application/zip", fileName);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating ZIP file");
             return StatusCode(500, "Error creating download file");
+        }
+    }
+
+    [HttpGet("squad-standard")]
+    public async Task<ActionResult<EnhancedSquadResponse>> ExtractSquadStandard(
+    [FromQuery] string url,
+    [FromQuery] string selector = "//table[@id='stats_squads_standard_for']")
+    {
+        string correlationId = Guid.NewGuid().ToString();
+        using var scope = _logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CorrelationId"] = correlationId,
+            ["Endpoint"] = nameof(ExtractSquadStandard),
+            ["Url"] = url
+        });
+
+        _logger.LogInformation("Starting squad standard extraction from URL");
+
+        try
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return BadRequest("URL parameter is required");
+            }
+
+            var result = await _crawlerAppService.ExtractSquadStandardFromUrlAsync(url, selector);
+            if (!result.Success)
+            {
+                _logger.LogWarning("Failed to extract squad standard data: {Message}", result.Message);
+                return BadRequest(result.Message ?? "Failed to extract squad standard data.");
+            }
+
+            if (result.Data == null)
+            {
+                return BadRequest("No squad data found.");
+            }
+
+            var jsonLink = Url.Action(nameof(DownloadSquadStandardJSON), null, new { url, selector }, Request.Scheme);
+            var zipLink = Url.Action(nameof(DownloadSquadStandardZip), null, new { url, selector }, Request.Scheme);
+
+            if (jsonLink == null || zipLink == null)
+            {
+                return StatusCode(500, "Failed to generate download links.");
+            }
+
+            var response = new EnhancedSquadResponse
+            {
+                Data = result.Data,
+                DownloadLinks = new DownloadLinks
+                {
+                    Json = jsonLink,
+                    Zip = zipLink
+                }
+            };
+
+            _logger.LogInformation("Successfully extracted {Count} squad records", result.Data?.Count ?? 0);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting squad standard data: {Message}", ex.Message);
+            return StatusCode(500, new { Message = "Internal server error.", Error = ex.Message });
+        }
+    }
+
+    [HttpGet("download-squad-standard-json")]
+    public async Task<IActionResult> DownloadSquadStandardJSON([FromQuery] string url, [FromQuery] string selector = "//table[@id='stats_squads_standard_for']")
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return BadRequest("URL parameter is required");
+            }
+
+            var result = await _crawlerAppService.ExtractSquadStandardFromUrlAsync(url, selector);
+            if (!result.Success)
+            {
+                _logger.LogError("Failed to extract squad standard data: {Message}", result.Message);
+                return BadRequest(result.Message ?? "Failed to extract squad standard data.");
+            }
+
+            // Convert to JSON
+            string jsonString = JsonSerializer.Serialize(result.Data, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            byte[] bytes = Encoding.UTF8.GetBytes(jsonString);
+            string fileName = $"squad_standard_{DateTime.UtcNow:yyyyMMddHHmmss}.json";
+            return File(bytes, "application/json", fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating squad standard JSON download: {Message}", ex.Message);
+            return StatusCode(500, "Error generating JSON download file");
+        }
+    }
+
+    [HttpGet("download-squad-standard-zip")]
+    public async Task<IActionResult> DownloadSquadStandardZip([FromQuery] string url, [FromQuery] string selector = "//table[@id='stats_squads_standard_for']")
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(url))
+            {
+                return BadRequest("URL parameter is required");
+            }
+
+            var result = await _crawlerAppService.ExtractSquadStandardFromUrlAsync(url, selector);
+            if (!result.Success)
+            {
+                _logger.LogError("Failed to extract squad standard data: {Message}", result.Message);
+                return BadRequest(result.Message ?? "Failed to extract squad standard data.");
+            }
+
+            using var memoryStream = new MemoryStream();
+            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true))
+            {
+                // Add squad standard data to ZIP
+                var entry = archive.CreateEntry("squad_standard_data.json");
+                using (var entryStream = entry.Open())
+                using (var streamWriter = new StreamWriter(entryStream))
+                {
+                    var json = JsonSerializer.Serialize(result.Data, new JsonSerializerOptions
+                    {
+                        WriteIndented = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    });
+                    await streamWriter.WriteAsync(json);
+                }
+            }
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var fileName = $"squad_standard_{DateTime.UtcNow:yyyyMMddHHmmss}.zip";
+
+            return File(memoryStream.ToArray(), "application/zip", fileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating squad standard ZIP file: {Message}", ex.Message);
+            return StatusCode(500, "Error creating ZIP download file");
         }
     }
 
@@ -408,8 +551,8 @@ public class SimpleCrawlerController : ControllerBase
             var entry = archive.CreateEntry(fileName);
             using var entryStream = entry.Open();
             using var streamWriter = new StreamWriter(entryStream);
-            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions 
-            { 
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
+            {
                 WriteIndented = true,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
@@ -423,4 +566,16 @@ public class EnhancedTeamDataResponse
 {
     public CompleteTeamDataDto Data { get; set; } = null!;
     public object DownloadLinks { get; set; } = string.Empty;
+}
+
+public class EnhancedSquadResponse
+{
+    public List<SquadStandardDto> Data { get; set; } = null!;
+    public DownloadLinks DownloadLinks { get; set; } = null!;
+}
+
+public class DownloadLinks
+{
+    public string Json { get; set; } = string.Empty;
+    public string Zip { get; set; } = string.Empty;
 }
