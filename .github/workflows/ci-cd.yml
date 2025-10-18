@@ -109,7 +109,8 @@ jobs:
 
       - name: Extract metadata (tags, labels)
         id: meta
-        uses: docker/metadata-action@dbef88086f6cef02e264edb7dbf63250c17cf6de9
+        # uses: docker/metadata-action@dbef88086f6cef02e264edb7dbf63250c17cf6de9 it make "unable to find version" error
+        uses: docker/metadata-action@v5
         with:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/football-stats-platform
           tags: |
