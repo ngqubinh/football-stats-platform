@@ -1,0 +1,186 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - feature/crawler
+      - dev
+      - main
+  pull_request:
+    branches:
+      - main
+  release:
+    types: [published] # Triggers on git tags like v1.1.0
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "8.0.x"
+
+      # - name: Setup Node.js (for Next.js)
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: "20"
+      #     cache: "npm"
+      #     cache-dependency-path: frontend/dashboard/package-lock.json
+
+      - name: Build .NET Backend
+        run: |
+          cd src/FSP
+          dotnet restore
+          dotnet build --configuration Release
+
+      # - name: Build Next.js Frontend
+      #   run: |
+      #     cd frontend
+      #     npm install
+      #     npm run build
+
+      - name: Run Tests (Backend - xUnit example)
+        run: |
+          cd src/FSP/FSP.Tests
+          dotnet test --no-build --verbosity normal || echo "No tests or skipped"
+
+      # - name: Run Tests (Frontend - Jest example)
+      #   run: |
+      #     cd src/frontend
+      #     npm test || echo "No tests or skipped"
+
+      - name: Clean Docker environment
+        run: |
+          docker system prune -f
+          docker builder prune -f
+
+      # GitHub runners ship with Docker Compose v2
+      # - name: Install Docker Compose
+      #   run: |
+      #     sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+      #     sudo chmod +x /usr/local/bin/docker-compose
+
+      - name: Run docker-compose to verify
+        run: |
+          docker compose -f infra/docker/docker-compose.yml up -d
+          sleep 10
+          curl --fail http://localhost:5000/health || exit 1
+          docker compose -f infra/docker/docker-compose.yml down
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: src/FSP/bin/Release/net8.0/
+          retention-days: 7
+
+      # - name: Build and push Docker image
+      #   if: github.event_name == 'release' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+      #   uses: docker/build-push-action@bc621f09ee16acd1f79aa78a3d23d7c5d5f4e546
+      #   with:
+      #     context: infra/docker
+      #     file: infra/docker/Dockerfile
+      #     push: true
+      #     tags: ${{ steps.meta.outputs.tags }}
+      #     labels: ${{ steps.meta.outputs.labels }}
+      #     cache-from: type=gha # Use GitHub Actions cache for faster builds
+      #     cache-to: type=gha,mode=max
+
+  push-images:
+    needs: build-and-test
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@e3e4b744d141e81a2bfce89480d5d8d4a2b3a9f2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@dbef88086f6cef02e264edb7dbf63250c17cf6de9
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/football-stats-platform
+          tags: |
+            type=sha # Adds :sha-<commit>
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }} # :latest only on main
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }} # :dev on dev branch
+            type=ref,event=tag # Adds :v1.1.0 for releases
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@bc621f09ee16acd1f79aa78a3d23d7c5d5f4e546
+        with:
+          context: infra/docker
+          file: infra/docker/FSP.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # deploy-dev:
+  #   needs: build-and-test
+  #   if: github.ref == 'refs/heads/dev'
+  #   runs-on: ubuntu-latest
+  #   environment: development
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Deploy Frontend to Vercel
+  #       uses: amondnet/vercel-action@v20
+  #       with:
+  #         vercel-token: ${{ secrets.VERCEL_TOKEN }}
+  #         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+  #         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+  #         working-directory: ./frontend
+  #         prod: false # Preview deployment for dev
+  #
+  #     - name: Push Docker to AWS ECR and Deploy to EC2
+  #       env:
+  #         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         AWS_REGION: us-east-1 # Your region
+  #       run: |
+  #         aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com
+  #         docker tag your-dockerhub-username/backend:latest your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com/your-repo/backend:latest
+  #         docker push your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com/your-repo/backend:latest
+  #
+  #         # SSH to EC2 and pull/update (use EC2 instance ID or key)
+  #         ssh -o StrictHostKeyChecking=no -i ${{ secrets.EC2_SSH_KEY }} ec2-user@your-ec2-ip "
+  #           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com &&
+  #           docker pull your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com/your-repo/backend:latest &&
+  #           docker stop backend-container || true &&
+  #           docker rm backend-container || true &&
+  #           docker run -d --name backend-container -p 5000:5000 --env-file .env your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com/your-repo/backend:latest
+  #         "
+  #
+  #         # Handle DB migrations (e.g., EF Core)
+  #         ssh ... "cd /app/backend && dotnet ef database update --connection ${{ secrets.RDS_DEV_CONNECTION_STRING }}"
+  #
+  # deploy-prod:
+  #   needs: build-and-test
+  #   if: startsWith(github.ref, 'refs/tags/v')
+  #   runs-on: ubuntu-latest
+  #   environment: production
+  #   steps:
+  #     # Similar to deploy-dev but with prod flags, approvals, and prod secrets
+  #     - name: Deploy Frontend to Vercel (Prod)
+  #       uses: amondnet/vercel-action@v20
+  #       with:
+  #         # ... same as above but prod: true
+  #         prod: true
+
+  # Similar AWS/EC2 steps for prod, with RDS prod connection
+  # Add manual approval if needed: uses: trstringer/manual-approval@v1

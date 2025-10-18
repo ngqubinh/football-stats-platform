@@ -11,8 +11,6 @@ public static class SystemSeeder
         string[] leagues = new[]
         {
             StaticLeague.PremierLeague,
-            StaticLeague.EuropaLeague,
-            StaticLeague.Liga1,
         };
 
         var existingLeauge = await dbContext.Leagues.Select(l => l.LeagueName).ToListAsync();

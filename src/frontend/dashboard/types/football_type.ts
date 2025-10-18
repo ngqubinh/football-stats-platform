@@ -165,3 +165,46 @@ export interface CrawlAllDataRequest {
   url: string;
   id: string;
 }
+
+export interface SquadStandardDto {
+  squad: string;
+  number_of_players: number;
+  average_age: number;
+  possession: number;
+  matches_played: number;
+  starts: number;
+  minutes: number;
+  nineties: number;
+  goals: number;
+  assists: number;
+  goals_plus_assists: number;
+  non_penalty_goals: number;
+  penalty_kicks_made: number;
+  penalty_kicks_attempted: number;
+  yellow_cards: number;
+  red_cards: number;
+  expected_goals: number;
+  non_penalty_expected_goals: number;
+  expected_assisted_goals: number;
+  non_penalty_expected_goals_plus_assisted_goals: number;
+  progressive_carries: number;
+  progressive_passes: number;
+  goals_per_90: number;
+  assists_per_90: number;
+  goals_plus_assists_per_90: number;
+  non_penalty_goals_per_90: number;
+  goals_plus_assists_minus_pk_per_90: number;
+  expected_goals_per_90: number;
+  expected_assisted_goals_per_90: number;
+  expected_goals_plus_assisted_goals_per_90: number;
+  non_penalty_expected_goals_per_90: number;
+  non_penalty_expected_goals_plus_assisted_goals_per_90: number;
+}
+
+export interface EnhancedSquadResponse {
+  data: SquadStandardDto[];
+  downloadLinks: {
+    json: string;
+    zip: string;
+  };
+}

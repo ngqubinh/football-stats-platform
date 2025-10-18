@@ -55,6 +55,27 @@ public class PlayerDto
     [JsonPropertyName("red_cards")]
     public int RedCards { get; set; }
 
+    [JsonPropertyName("expected_goals")]
+    public float ExpectedGoals { get; set; }
+
+    [JsonPropertyName("non_penalty_expected_goals")]
+    public float NonPenaltyExpectedGoals { get; set; }
+
+    [JsonPropertyName("expected_assisted_goals")]
+    public float ExpectedAssistedGoals { get; set; }
+
+    [JsonPropertyName("non_penalty_expected_goals_plus_assisted_goals")]
+    public float NonPenaltyExpectedGoalsPlusAssistedGoals { get; set; }
+
+    [JsonPropertyName("progressive_carries")]
+    public int ProgressiveCarries { get; set; }
+
+    [JsonPropertyName("progressive_passes")]
+    public int ProgressivePasses { get; set; }
+
+    [JsonPropertyName("progressive_receptions")]
+    public int ProgressiveReceptions { get; set; }
+
     [JsonPropertyName("goals_per_90s")]
     public string GoalsPer90s { get; set; } = string.Empty;
 
@@ -70,13 +91,30 @@ public class PlayerDto
     [JsonPropertyName("non_penalty_goals_assists_per_90s")]
     public string NonPenaltyGoalsAssistsPer90s { get; set; } = string.Empty;
 
+    [JsonPropertyName("expected_goals_per_90")]
+    public string ExpectedGoalsPer90 { get; set; } = string.Empty;
+
+    [JsonPropertyName("expected_assisted_goals_per_90")]
+    public string ExpectedAssistedGoalsPer90 { get; set; } = string.Empty;
+
+    [JsonPropertyName("expected_goals_plus_assisted_goals_per_90")]
+    public string ExpectedGoalsPlusAssistedGoalsPer90 { get; set; } = string.Empty;
+
+    [JsonPropertyName("non_penalty_expected_goals_per_90")]
+    public string NonPenaltyExpectedGoalsPer90 { get; set; } = string.Empty;
+
+    [JsonPropertyName("non_penalty_expected_goals_plus_assisted_goals_per_90")]
+    public string NonPenaltyExpectedGoalsPlusAssistedGoalsPer90 { get; set; } = string.Empty;
+
     [JsonPropertyName("club_id")]
     public int ClubId { get; set; }
 
     [JsonPropertyName("club_name")]
     public string ClubName { get; set; } = string.Empty;
+
     [JsonPropertyName("player_ref_id")]
     public string PlayerRefId { get; set; } = string.Empty;
+
     [JsonPropertyName("season")]
     public string Season { get; set; } = string.Empty;
 }
@@ -178,7 +216,7 @@ public class ShootingDto
     [JsonPropertyName("penalty_kicks_attempted")]
     public int PenaltyKicksAttempted { get; set; }
     [JsonPropertyName("season")]
-    public string Season { get; set; } = string.Empty; 
+    public string Season { get; set; } = string.Empty;
     [JsonPropertyName("player_id")]
     public int PlayerId { get; set; }
     [JsonPropertyName("player")]

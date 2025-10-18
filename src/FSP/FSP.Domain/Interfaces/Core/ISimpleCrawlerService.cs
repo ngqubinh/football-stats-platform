@@ -19,6 +19,7 @@ public class CompleteTeamData
 public interface ISimpleCrawlerService
 {
     Task<Result<List<Player>>> ExtractPlayersFromUrlAsync(string url, string selector);
+    Task<Result<List<SquadStandard>>> ExtractSquadStandardFromUrlAsync(string url, string selector);
     Task<Result<List<Goalkeeping>>> ExtractGoalkeepingFromUrlAsync(string url, string selector);
     Task<Result<List<Shooting>>> ExtractShootingFromUrlAsync(string url, string selector);
     Task<Result<List<MatchLog>>> ExtractMatchLogFromUrlAsync(string url, string selector);

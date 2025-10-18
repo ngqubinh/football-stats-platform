@@ -47,7 +47,6 @@ public class FootballService : IFootballService
             if (orderedSeasons.Count < 2)
             {
                 _logger.LogWarning("Player {PlayerRefId} has only one season of data. Cannot compare.", playerRefId);
-                //return Result<IEnumerable<PlayerSeasonComparison>>.Fail("Player has only one season of data. Cannot compare.");
                 return Result<IEnumerable<PlayerSeasonComparison>>.Ok(Enumerable.Empty<PlayerSeasonComparison>());
             }
 
@@ -273,7 +272,7 @@ public class FootballService : IFootballService
             }
 
             // Check if player is a goalkeeper
-            if (player.Position !=  PlayerPosition.GK.ToString())
+            if (player.Position != PlayerPosition.GK.ToString())
             {
                 this._logger.LogWarning("Player {PlayerName} is not a goalkeeper. Position: {Position}",
                     player.PlayerName, player.Position);
@@ -401,19 +400,19 @@ public class FootballService : IFootballService
                 .OrderBy(x => x.Season) // Sắp xếp tăng dần để timeline đúng
                 .ToList();
 
-            _logger.LogInformation("Retrieved club trend data for {Count} seasons for club {ClubId}", 
+            _logger.LogInformation("Retrieved club trend data for {Count} seasons for club {ClubId}",
                 seasonGroups.Count, clubId);
 
             return Result<IEnumerable<ClubTrendDto>>.Ok(seasonGroups);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving club trend data for club {ClubId}: {Message}", 
+            _logger.LogError(ex, "Error retrieving club trend data for club {ClubId}: {Message}",
                 clubId, ex.Message);
             return Result<IEnumerable<ClubTrendDto>>.Fail($"Error retrieving club trend data for club {clubId}.");
         }
     }
-    
+
     #region helpers
     private PlayerSeasonComparison CreateSeasonComparison(Player current, Player previous)
     {
@@ -491,8 +490,6 @@ public class FootballService : IFootballService
 
     private string GetPreviousSeason(string currentSeason)
     {
-        // Simple logic to get previous season
-        // Assumes format like "2023-2024"
         if (string.IsNullOrEmpty(currentSeason) || !currentSeason.Contains('-'))
             return "2024-2025";
 

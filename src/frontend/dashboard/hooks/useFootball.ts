@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "./hook";
-import { resetExtractAllData, crawlPremierLeagueSlice, crawlRomaniaLiga1Slice, downloadJsonSlice, downloadZipSlice, extractAllDataSlice, fetchClubsSlice, fetchClubTrendSlice, fetchComparedSeasonPlayerSlice, fetchCurrenntPlayersSlice, fetchGoalkeepingByPlayerSlice, fetchLeaguesSlice, fetchPlayersSlice, fetchShootingByPlayerSlice, resetCrawlData, setPlayerRefId, setSelectedClubId, setSelectedLeagueId } from "@/features/footballSlice";
+import { resetExtractAllData, resetExtractSquadStandard, crawlPremierLeagueSlice, crawlRomaniaLiga1Slice, downloadJsonSlice, downloadZipSlice, extractAllDataSlice, extractSquadStandardSlice, fetchClubsSlice, fetchClubTrendSlice, fetchComparedSeasonPlayerSlice, fetchCurrenntPlayersSlice, fetchGoalkeepingByPlayerSlice, fetchLeaguesSlice, fetchPlayersSlice, fetchShootingByPlayerSlice, resetCrawlData, setPlayerRefId, setSelectedClubId, setSelectedLeagueId, downloadSquadStandardJsonSlice, downloadSquadStandardZipSlice } from "@/features/footballSlice";
 
 export const useFootball = () => {
     const dispatch = useAppDispatch();
@@ -25,6 +25,13 @@ export const useFootball = () => {
     const extractedData = useAppSelector((state) => state.leagues.extractAllData);
     const extractAllDataStatus = useAppSelector((state) => state.leagues.extractAllDataStatus);
     const extractAllDataError = useAppSelector((state) => state.leagues.extractAllDataError);
+
+    const extractedSquadStandard = useAppSelector((state) => state.leagues.extractSquadStandard);
+    const extractSquadStandardStatus = useAppSelector((state) => state.leagues.extractSquadStandardStatus);
+    const extractSquadStandardError = useAppSelector((state) => state.leagues.extractSquadStandardError);
+
+    const downloadSquadStandardStatus = useAppSelector((state) => state.leagues.downloadSquadStandardStatus);
+    const downloadSquadStandardError = useAppSelector((state) => state.leagues.downloadSquadStandardError);
 
     useEffect(() => {
         if (status === "idle") {
@@ -107,6 +114,10 @@ export const useFootball = () => {
         return dispatch(extractAllDataSlice({ url, id }));
     };
 
+    const extractSquadStandard = (url: string, selector?: string) => {
+        return dispatch(extractSquadStandardSlice({ url, selector }));
+    };
+
     const downloadJson = (url: string, id: string) => {
         return dispatch(downloadJsonSlice({ url, id }));
     };
@@ -117,6 +128,18 @@ export const useFootball = () => {
 
     const resetExtractedData = () => {
         dispatch(resetExtractAllData());
+    };
+
+    const resetExtractedSquadStandard = () => {
+        dispatch(resetExtractSquadStandard());
+    };
+
+    const downloadSquadStandardJson = (url: string, selector?: string) => {
+        return dispatch(downloadSquadStandardJsonSlice({ url, selector }));
+    };
+
+    const downloadSquadStandardZip = (url: string, selector?: string) => {
+        return dispatch(downloadSquadStandardZipSlice({ url, selector }));
     };
 
     return {
@@ -154,6 +177,17 @@ export const useFootball = () => {
         extractAllDataError,
         downloadJson,
         downloadZip,
-        resetExtractAllData: resetExtractedData, 
+        resetExtractAllData: resetExtractedData,
+
+        extractSquadStandard,
+        extractedSquadStandard,
+        extractSquadStandardStatus,
+        extractSquadStandardError,
+        resetExtractSquadStandard: resetExtractedSquadStandard,
+
+        downloadSquadStandardJson,
+        downloadSquadStandardZip,
+        downloadSquadStandardStatus,
+        downloadSquadStandardError,
     };
 }

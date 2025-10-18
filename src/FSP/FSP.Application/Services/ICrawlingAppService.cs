@@ -9,7 +9,6 @@ namespace FSP.Application.Services;
 public interface ICrawlingAppService
 {
     Task<Result<List<URLInformationDto>>> CrawlPremierLeagueAsync();
-    Task<Result<List<URLInformationDto>>> CrawlRomaniaLiga1Async();
 }
 
 public class CrawlingAppService : ICrawlingAppService
@@ -28,23 +27,6 @@ public class CrawlingAppService : ICrawlingAppService
         try
         {
             Result<List<URLInformation>> domainResult = await this._crawling.CrawlPremierLeagueAsync();
-            if (!domainResult.Success)
-                return Result<List<URLInformationDto>>.Fail(domainResult.Message!);
-
-            List<URLInformationDto> urlInformationDtos = this._core.ToUrlInformationDtos(domainResult.Data!).ToList();
-            return Result<List<URLInformationDto>>.Ok(urlInformationDtos);
-        }
-        catch (Exception ex)
-        {
-            return Result<List<URLInformationDto>>.Fail($"Error crawling players for: {ex.Message}.");
-        }
-    }
-
-    public async Task<Result<List<URLInformationDto>>> CrawlRomaniaLiga1Async()
-    {
-        try
-        {
-            Result<List<URLInformation>> domainResult = await this._crawling.CrawlRomaniaLiga1Async();
             if (!domainResult.Success)
                 return Result<List<URLInformationDto>>.Fail(domainResult.Message!);
 

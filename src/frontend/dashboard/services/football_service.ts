@@ -1,4 +1,4 @@
-import { Club, ClubTrend, EnhancedTeamDataResponse, Goalkeeping, League, Player, PlayerSeasonComparison, Shooting, UrlInformation } from "@/types/football_type";
+import { Club, ClubTrend, EnhancedSquadResponse, EnhancedTeamDataResponse, Goalkeeping, League, Player, PlayerSeasonComparison, Shooting, UrlInformation } from "@/types/football_type";
 import { toast } from "sonner";
 
 const API_BASE_URL = 'http://localhost:5000';
@@ -207,6 +207,29 @@ export const crawlAllDataService = async (url: string, id: string): Promise<Enha
   }
 };
 
+export const extractSquadStandardService = async (url: string, selector?: string): Promise<EnhancedSquadResponse> => {
+  try {
+    const query = new URLSearchParams();
+    query.append('url', url);
+    if (selector) query.append('selector', selector);
+
+    const response = await fetch(`${API_BASE_URL}/api/simplecrawler/squad-standard?${query.toString()}`, {
+      method: METHODs.GET,
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data: EnhancedSquadResponse = await response.json();
+    return data;
+  } catch (error) {
+    toast.error("Failed to extract squad standard data");
+    throw error;
+  }
+};
+
 export const downloadJsonService = async (url: string, id: string): Promise<Blob> => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/simplecrawler/download-json?url=${encodeURIComponent(url)}&id=${encodeURIComponent(id)}`, {
@@ -237,6 +260,48 @@ export const downloadZipService = async (url: string, id: string): Promise<Blob>
     return await response.blob();
   } catch (error) {
     toast.error("Failed to download ZIP file");
+    throw error;
+  }
+};
+
+export const downloadSquadStandardJsonService = async (url: string, selector?: string): Promise<Blob> => {
+  try {
+    const query = new URLSearchParams();
+    query.append('url', url);
+    if (selector) query.append('selector', selector);
+
+    const response = await fetch(`${API_BASE_URL}/api/simplecrawler/download-squad-standard-json?${query.toString()}`, {
+      method: METHODs.GET,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.blob();
+  } catch (error) {
+    toast.error("Failed to download squad standard JSON file");
+    throw error;
+  }
+};
+
+export const downloadSquadStandardZipService = async (url: string, selector?: string): Promise<Blob> => {
+  try {
+    const query = new URLSearchParams();
+    query.append('url', url);
+    if (selector) query.append('selector', selector);
+
+    const response = await fetch(`${API_BASE_URL}/api/simplecrawler/download-squad-standard-zip?${query.toString()}`, {
+      method: METHODs.GET,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.blob();
+  } catch (error) {
+    toast.error("Failed to download squad standard ZIP file");
     throw error;
   }
 };

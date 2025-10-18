@@ -259,205 +259,205 @@ public class CrawlingService : ICrawlingService
         }
     }
 
-    public async Task<Result<List<URLInformation>>> CrawlRomaniaLiga1Async()
-    {
-        string correlationId = Guid.NewGuid().ToString();
-        using (_logger.BeginScope(new Dictionary<string, object>
-        {
-            ["CorrelationId"] = correlationId,
-            ["Operation"] = nameof(CrawlRomaniaLiga1Async)
-        }))
-        {
-            _logger.LogInformation("Starting Romania Liga 1 crawl");
-
-            var serverStatus = await IsServerAliveAsync();
-            if (!serverStatus.Success)
-            {
-                _logger.LogError("Cannot proceed with crawling: {Message}", serverStatus.Message);
-                return Result<List<URLInformation>>.Fail(serverStatus.Message ?? "Server is not accessible.");
-            }
-
-            var results = new List<URLInformation>();
-
-            foreach (var tagged in RomaniaLiga1URLS.Urls)
-            {
-                foreach (var seasonUrl in tagged.SeasonUrls)
-                {
-                    var status = new URLInformation
-                    {
-                        Label = $"{tagged.Label}",
-                        URL = seasonUrl.URL,
-                        League = tagged.League!,
-                        Season = seasonUrl.Season
-                    };
-
-                    try
-                    {
-                        _logger.LogInformation("Processing team {Label} [League: {LeagueName}]", 
-                            tagged.Label, tagged.League?.LeagueName ?? "Liga 1");
-
-                        var response = await _httpClient.GetAsync(seasonUrl.URL);
-                        status.StatusCode = (int)response.StatusCode;
-                        status.Status = response.StatusCode.ToString();
-
-                        _logger.LogInformation("Received response: {Status} ({StatusCode})", status.Status, status.StatusCode);
-
-                        if (!response.IsSuccessStatusCode)
-                        {
-                            _logger.LogWarning("Failed to fetch team data: {Status}", response.StatusCode);
-                            results.Add(status);
-                            continue;
-                        }
-
-                        var html = await response.Content.ReadAsStringAsync();
-                        var tableIds = tagged.TableIds ?? new TeamTableIds();
-
-                        var playersSelector = $"//div[@id='div_stats_standard_{tableIds.StandardStats}']//table";
-                        var players = await _htmlParser.ExtractPlayersTableAsync(html, playersSelector);
-                        if (players != null && players.Any())
-                        {
-                            foreach (var player in players)
-                            {
-                                player.PlayerRefId = GenerateNumericPlayerRefId(player.PlayerName, tagged.Label);
-                                _logger.LogDebug("Generated PlayerRefId for {PlayerName}: {PlayerRefId}", player.PlayerName, player.PlayerRefId);
-                            }
-
-                            var filePath = await _dataStorage.SavePlayersToJsonAsync(players, tagged.Label, tagged.League!);
-                            var jsonContent = await File.ReadAllTextAsync(filePath);
-
-                            _logger.LogDebug("Importing players with LeagueName: {LeagueName}, Nation: {Nation}", 
-                                tagged.League?.LeagueName ?? "Liga 1", tagged.League?.Nation ?? "Romania");
-
-                            var importResult = await _importService.ImportFromJsonAsync(
-                                jsonContent, "players", tagged.Label, tagged.League?.LeagueName ?? "Liga 1", tagged.League?.Nation ?? "Romania", seasonUrl.Season);
-
-                            if (importResult.Success)
-                            {
-                                _logger.LogInformation("✅ Imported {Count} players for {Team} to database", 
-                                    players.Count, tagged.Label);
-                            }
-                            else
-                            {
-                                _logger.LogWarning("⚠️ Failed to import players for {Team}: {Message}", 
-                                    tagged.Label, importResult.Message);
-                            }
-                        }
-                        else
-                        {
-                            _logger.LogWarning("❌ No players found for {Team} with selector: {Selector}", 
-                                tagged.Label, playersSelector);
-                        }
-
-                        results.Add(status);
-                    }
-                    catch (Exception ex)
-                    {
-                        status.StatusCode = 0;
-                        status.Status = $"Error: {ex.Message}";
-                        _logger.LogError(ex, "❌ Error processing team {Label}: {Message}", 
-                            tagged.Label, ex.Message);
-                        results.Add(status);
-                    }
-                }
-            }
-
-            foreach (var playerTag in RomaniaLiga1URLS.PlayerUrls)
-    {
-        foreach (var playerUrl in playerTag.PlayerUrls)
-        {
-            var clubName = playerTag.PlayerDetails?.Club?.Trim();
-            if (string.IsNullOrEmpty(clubName))
-            {
-                _logger.LogWarning("Skipping player URL {Url} due to empty club name in playerTag.PlayerDetails", playerUrl.URL);
-                results.Add(new URLInformation
-                {
-                    Label = "Unknown Player - Current",
-                    URL = playerUrl.URL,
-                    League = new League { LeagueName = StaticLeague.Liga1, Nation = StaticNation.Romania.ToString() },
-                    Status = "Skipped: Empty club name",
-                    StatusCode = 0
-                });
-                continue;
-            }
-            var status = new URLInformation
-            {
-                Label = $"{clubName} Player - Current",
-                URL = playerUrl.URL,
-                League = new League { LeagueName = StaticLeague.Liga1, Nation = StaticNation.Romania.ToString() }
-            };
-            try
-            {
-                _logger.LogInformation("Processing player URL {Url} for Club {Club}", playerUrl.URL, clubName);
-                var response = await _httpClient.GetAsync(playerUrl.URL);
-                status.StatusCode = (int)response.StatusCode;
-                status.Status = response.StatusCode.ToString();
-                _logger.LogInformation("Received response for player: {Status} ({StatusCode})", status.Status, status.StatusCode);
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("Failed to fetch player data: {Status}", response.StatusCode);
-                    results.Add(status);
-                    continue;
-                }
-                var html = await response.Content.ReadAsStringAsync();
-                var playerDetails = await _htmlParser.ExtractPlayerDetailsAsync(html, "//div[@id='info']", clubName);
-                if (playerDetails == null || string.IsNullOrEmpty(playerDetails.FullName))
-                {
-                    _logger.LogWarning("❌ No player details or empty FullName for {Club} at URL {Url}", clubName, playerUrl.URL);
-                    status.Status = "No player details or empty FullName";
-                    results.Add(status);
-                    continue;
-                }
-                playerDetails.Club = clubName;
-                var filePath = await _dataStorage.SavePlayerDetailsToJsonAsync(playerDetails, playerDetails.FullName);
-                var jsonContent = await File.ReadAllTextAsync(filePath);
-                _logger.LogDebug("Generated JSON for player {PlayerName} (PlayerRefId: {PlayerRefId}): {JsonContent}",
-                    playerDetails.FullName, playerDetails.PlayerRefId, jsonContent);
-                // Dynamically select the most recent season for the club
-                string season = "2025-2026"; // Fallback
-                var team = RomaniaLiga1URLS.Urls.FirstOrDefault(t => t.Label.Equals(clubName, StringComparison.OrdinalIgnoreCase));
-                if (team != null)
-                {
-                    // Sort SeasonUrls by season (assuming format "YYYY-YYYY") in descending order
-                    var latestSeason = team.SeasonUrls
-                        .OrderByDescending(s => s.Season)
-                        .FirstOrDefault()?.Season ?? "2025-2026";
-                    season = latestSeason;
-                    _logger.LogInformation("Dynamically selected season {Season} for club {ClubName} in playerDetails import", season, clubName);
-                }
-                else
-                {
-                    _logger.LogWarning("Club {ClubName} not found in RomaniaLiga1URLS.Urls, using fallback season {Season}", clubName, season);
-                }
-                var importResult = await _importService.ImportFromJsonAsync(
-                    jsonContent, "playerDetails", clubName, StaticLeague.Liga1, StaticNation.Romania.ToString(), season);
-                if (importResult.Success)
-                {
-                    _logger.LogInformation("✅ Imported player details for {PlayerName} (PlayerRefId: {PlayerRefId}) to database with season {Season}",
-                        playerDetails.FullName, playerDetails.PlayerRefId, season);
-                }
-                else
-                {
-                    _logger.LogWarning("⚠️ Failed to import player details for {PlayerName} (PlayerRefId: {PlayerRefId}): {Message}",
-                        playerDetails.FullName, playerDetails.PlayerRefId, importResult.Message);
-                }
-                results.Add(status);
-                await Task.Delay(1000);
-            }
-            catch (Exception ex)
-            {
-                status.StatusCode = 0;
-                status.Status = $"Error: {ex.Message}";
-                _logger.LogError(ex, "❌ Error processing player URL {Url} for Club {Club}: {Message}",
-                    playerUrl.URL, clubName, ex.Message);
-                results.Add(status);
-            }
-        }
-    }
-            _logger.LogInformation("🎉 Completed Romania Liga 1 crawl with {Count} results", results.Count);
-            return Result<List<URLInformation>>.Ok(results);
-        }
-    }
-
+    // public async Task<Result<List<URLInformation>>> CrawlRomaniaLiga1Async()
+    // {
+    //     string correlationId = Guid.NewGuid().ToString();
+    //     using (_logger.BeginScope(new Dictionary<string, object>
+    //     {
+    //         ["CorrelationId"] = correlationId,
+    //         ["Operation"] = nameof(CrawlRomaniaLiga1Async)
+    //     }))
+    //     {
+    //         _logger.LogInformation("Starting Romania Liga 1 crawl");
+    //
+    //         var serverStatus = await IsServerAliveAsync();
+    //         if (!serverStatus.Success)
+    //         {
+    //             _logger.LogError("Cannot proceed with crawling: {Message}", serverStatus.Message);
+    //             return Result<List<URLInformation>>.Fail(serverStatus.Message ?? "Server is not accessible.");
+    //         }
+    //
+    //         var results = new List<URLInformation>();
+    //
+    //         foreach (var tagged in RomaniaLiga1URLS.Urls)
+    //         {
+    //             foreach (var seasonUrl in tagged.SeasonUrls)
+    //             {
+    //                 var status = new URLInformation
+    //                 {
+    //                     Label = $"{tagged.Label}",
+    //                     URL = seasonUrl.URL,
+    //                     League = tagged.League!,
+    //                     Season = seasonUrl.Season
+    //                 };
+    //
+    //                 try
+    //                 {
+    //                     _logger.LogInformation("Processing team {Label} [League: {LeagueName}]", 
+    //                         tagged.Label, tagged.League?.LeagueName ?? "Liga 1");
+    //
+    //                     var response = await _httpClient.GetAsync(seasonUrl.URL);
+    //                     status.StatusCode = (int)response.StatusCode;
+    //                     status.Status = response.StatusCode.ToString();
+    //
+    //                     _logger.LogInformation("Received response: {Status} ({StatusCode})", status.Status, status.StatusCode);
+    //
+    //                     if (!response.IsSuccessStatusCode)
+    //                     {
+    //                         _logger.LogWarning("Failed to fetch team data: {Status}", response.StatusCode);
+    //                         results.Add(status);
+    //                         continue;
+    //                     }
+    //
+    //                     var html = await response.Content.ReadAsStringAsync();
+    //                     var tableIds = tagged.TableIds ?? new TeamTableIds();
+    //
+    //                     var playersSelector = $"//div[@id='div_stats_standard_{tableIds.StandardStats}']//table";
+    //                     var players = await _htmlParser.ExtractPlayersTableAsync(html, playersSelector);
+    //                     if (players != null && players.Any())
+    //                     {
+    //                         foreach (var player in players)
+    //                         {
+    //                             player.PlayerRefId = GenerateNumericPlayerRefId(player.PlayerName, tagged.Label);
+    //                             _logger.LogDebug("Generated PlayerRefId for {PlayerName}: {PlayerRefId}", player.PlayerName, player.PlayerRefId);
+    //                         }
+    //
+    //                         var filePath = await _dataStorage.SavePlayersToJsonAsync(players, tagged.Label, tagged.League!);
+    //                         var jsonContent = await File.ReadAllTextAsync(filePath);
+    //
+    //                         _logger.LogDebug("Importing players with LeagueName: {LeagueName}, Nation: {Nation}", 
+    //                             tagged.League?.LeagueName ?? "Liga 1", tagged.League?.Nation ?? "Romania");
+    //
+    //                         var importResult = await _importService.ImportFromJsonAsync(
+    //                             jsonContent, "players", tagged.Label, tagged.League?.LeagueName ?? "Liga 1", tagged.League?.Nation ?? "Romania", seasonUrl.Season);
+    //
+    //                         if (importResult.Success)
+    //                         {
+    //                             _logger.LogInformation("✅ Imported {Count} players for {Team} to database", 
+    //                                 players.Count, tagged.Label);
+    //                         }
+    //                         else
+    //                         {
+    //                             _logger.LogWarning("⚠️ Failed to import players for {Team}: {Message}", 
+    //                                 tagged.Label, importResult.Message);
+    //                         }
+    //                     }
+    //                     else
+    //                     {
+    //                         _logger.LogWarning("❌ No players found for {Team} with selector: {Selector}", 
+    //                             tagged.Label, playersSelector);
+    //                     }
+    //
+    //                     results.Add(status);
+    //                 }
+    //                 catch (Exception ex)
+    //                 {
+    //                     status.StatusCode = 0;
+    //                     status.Status = $"Error: {ex.Message}";
+    //                     _logger.LogError(ex, "❌ Error processing team {Label}: {Message}", 
+    //                         tagged.Label, ex.Message);
+    //                     results.Add(status);
+    //                 }
+    //             }
+    //         }
+    //
+    //         foreach (var playerTag in RomaniaLiga1URLS.PlayerUrls)
+    // {
+    //     foreach (var playerUrl in playerTag.PlayerUrls)
+    //     {
+    //         var clubName = playerTag.PlayerDetails?.Club?.Trim();
+    //         if (string.IsNullOrEmpty(clubName))
+    //         {
+    //             _logger.LogWarning("Skipping player URL {Url} due to empty club name in playerTag.PlayerDetails", playerUrl.URL);
+    //             results.Add(new URLInformation
+    //             {
+    //                 Label = "Unknown Player - Current",
+    //                 URL = playerUrl.URL,
+    //                 League = new League { LeagueName = StaticLeague.Liga1, Nation = StaticNation.Romania.ToString() },
+    //                 Status = "Skipped: Empty club name",
+    //                 StatusCode = 0
+    //             });
+    //             continue;
+    //         }
+    //         var status = new URLInformation
+    //         {
+    //             Label = $"{clubName} Player - Current",
+    //             URL = playerUrl.URL,
+    //             League = new League { LeagueName = StaticLeague.Liga1, Nation = StaticNation.Romania.ToString() }
+    //         };
+    //         try
+    //         {
+    //             _logger.LogInformation("Processing player URL {Url} for Club {Club}", playerUrl.URL, clubName);
+    //             var response = await _httpClient.GetAsync(playerUrl.URL);
+    //             status.StatusCode = (int)response.StatusCode;
+    //             status.Status = response.StatusCode.ToString();
+    //             _logger.LogInformation("Received response for player: {Status} ({StatusCode})", status.Status, status.StatusCode);
+    //             if (!response.IsSuccessStatusCode)
+    //             {
+    //                 _logger.LogWarning("Failed to fetch player data: {Status}", response.StatusCode);
+    //                 results.Add(status);
+    //                 continue;
+    //             }
+    //             var html = await response.Content.ReadAsStringAsync();
+    //             var playerDetails = await _htmlParser.ExtractPlayerDetailsAsync(html, "//div[@id='info']", clubName);
+    //             if (playerDetails == null || string.IsNullOrEmpty(playerDetails.FullName))
+    //             {
+    //                 _logger.LogWarning("❌ No player details or empty FullName for {Club} at URL {Url}", clubName, playerUrl.URL);
+    //                 status.Status = "No player details or empty FullName";
+    //                 results.Add(status);
+    //                 continue;
+    //             }
+    //             playerDetails.Club = clubName;
+    //             var filePath = await _dataStorage.SavePlayerDetailsToJsonAsync(playerDetails, playerDetails.FullName);
+    //             var jsonContent = await File.ReadAllTextAsync(filePath);
+    //             _logger.LogDebug("Generated JSON for player {PlayerName} (PlayerRefId: {PlayerRefId}): {JsonContent}",
+    //                 playerDetails.FullName, playerDetails.PlayerRefId, jsonContent);
+    //             // Dynamically select the most recent season for the club
+    //             string season = "2025-2026"; // Fallback
+    //             var team = RomaniaLiga1URLS.Urls.FirstOrDefault(t => t.Label.Equals(clubName, StringComparison.OrdinalIgnoreCase));
+    //             if (team != null)
+    //             {
+    //                 // Sort SeasonUrls by season (assuming format "YYYY-YYYY") in descending order
+    //                 var latestSeason = team.SeasonUrls
+    //                     .OrderByDescending(s => s.Season)
+    //                     .FirstOrDefault()?.Season ?? "2025-2026";
+    //                 season = latestSeason;
+    //                 _logger.LogInformation("Dynamically selected season {Season} for club {ClubName} in playerDetails import", season, clubName);
+    //             }
+    //             else
+    //             {
+    //                 _logger.LogWarning("Club {ClubName} not found in RomaniaLiga1URLS.Urls, using fallback season {Season}", clubName, season);
+    //             }
+    //             var importResult = await _importService.ImportFromJsonAsync(
+    //                 jsonContent, "playerDetails", clubName, StaticLeague.Liga1, StaticNation.Romania.ToString(), season);
+    //             if (importResult.Success)
+    //             {
+    //                 _logger.LogInformation("✅ Imported player details for {PlayerName} (PlayerRefId: {PlayerRefId}) to database with season {Season}",
+    //                     playerDetails.FullName, playerDetails.PlayerRefId, season);
+    //             }
+    //             else
+    //             {
+    //                 _logger.LogWarning("⚠️ Failed to import player details for {PlayerName} (PlayerRefId: {PlayerRefId}): {Message}",
+    //                     playerDetails.FullName, playerDetails.PlayerRefId, importResult.Message);
+    //             }
+    //             results.Add(status);
+    //             await Task.Delay(1000);
+    //         }
+    //         catch (Exception ex)
+    //         {
+    //             status.StatusCode = 0;
+    //             status.Status = $"Error: {ex.Message}";
+    //             _logger.LogError(ex, "❌ Error processing player URL {Url} for Club {Club}: {Message}",
+    //                 playerUrl.URL, clubName, ex.Message);
+    //             results.Add(status);
+    //         }
+    //     }
+    // }
+    //         _logger.LogInformation("🎉 Completed Romania Liga 1 crawl with {Count} results", results.Count);
+    //         return Result<List<URLInformation>>.Ok(results);
+    //     }
+    // }
+    //
     private string GenerateNumericPlayerRefId(string playerName, string clubName)
     {
         var input = $"{playerName}_{clubName}";
