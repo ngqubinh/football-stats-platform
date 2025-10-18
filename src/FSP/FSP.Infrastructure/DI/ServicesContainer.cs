@@ -15,16 +15,16 @@ namespace FSP.Infrastructure.DI;
 
 public static class ServicesContainer
 {
-    public static IServiceCollection MainService(this IServiceCollection services, IConfiguration config)
-    {
+	public static IServiceCollection MainService(this IServiceCollection services, IConfiguration config)
+	{
 		// Database
-		string connectionString = config.GetValue<string>("ConnectionStrings:postgreSQL") 
+		string connectionString = config.GetValue<string>("ConnectionStrings:postgreSQL")
 			?? throw new InvalidOperationException("PostgreSQL connection string is missing");
 
-		services.AddDbContext<ApplicationDbContext>(options => 
+		services.AddDbContext<ApplicationDbContext>(options =>
 			options.UseNpgsql(connectionString));
 
-        // CORS
+		// CORS
 		services.AddCors(options =>
 		{
 			options.AddPolicy("client_cors", builder =>
@@ -47,7 +47,7 @@ public static class ServicesContainer
 
 		// Services
 		services.AddHttpClient();
-        services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+		services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 		services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 		// Generic
@@ -66,6 +66,9 @@ public static class ServicesContainer
 		services.AddScoped<IImportService, ImportService>();
 		services.AddScoped<IFootballService, FootballService>();
 
+		// Squad
+		services.AddScoped<ISquadStandardMappingService, SquadStandardMappingService>();
+
 		// League DI
 		services.AddScoped<ILeagueMappingService, LeagueMappingService>();
 		services.AddScoped<ILeagueAppService, LeagueAppService>();
@@ -82,5 +85,5 @@ public static class ServicesContainer
 		services.AddScoped<IMatchLogMappingService, MatchLogMappingService>();
 
 		return services;
-    }
+	}
 }

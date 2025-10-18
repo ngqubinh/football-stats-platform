@@ -7,5 +7,4 @@ public interface ICrawlingService
 {
     Task<Result<bool>> IsServerAliveAsync();
     Task<Result<List<URLInformation>>> CrawlPremierLeagueAsync();
-    Task<Result<List<URLInformation>>> CrawlRomaniaLiga1Async();
 }

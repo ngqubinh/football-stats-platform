@@ -61,10 +61,10 @@ public class SimpleCrawlerService : ISimpleCrawlerService
             var htmlResult = await GetRawHtmlAsync(url);
             if (!htmlResult.Success)
             {
-                return Result<List<Player>>.Fail(htmlResult.Message);
+                return Result<List<Player>>.Fail(htmlResult.Message!);
             }
 
-            var players = await _htmlParser.ExtractPlayersTableAsync(htmlResult.Data, selector);
+            var players = await _htmlParser.ExtractPlayersTableAsync(htmlResult.Data!, selector);
             _logger.LogInformation("Extracted {Count} players from {Url}", players.Count, url);
 
             return Result<List<Player>>.Ok(players);
@@ -76,6 +76,29 @@ public class SimpleCrawlerService : ISimpleCrawlerService
         }
     }
 
+    public async Task<Result<List<SquadStandard>>> ExtractSquadStandardFromUrlAsync(string url, string selector)
+    {
+        try
+        {
+            var htmlResult = await GetRawHtmlAsync(url);
+            if (!htmlResult.Success)
+            {
+                return Result<List<SquadStandard>>.Fail(htmlResult.Message!);
+            }
+
+            var squads = await _htmlParser.ExtractSquadStandardTableAsync(htmlResult.Data!, selector);
+            _logger.LogInformation("Extracted {Count} squads from {Url}", squads.Count, url);
+
+            return Result<List<SquadStandard>>.Ok(squads);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting squads from {Url}: {Message}", url, ex.Message);
+            return Result<List<SquadStandard>>.Fail($"Error extracting squads: {ex.Message}");
+
+        }
+    }
+
     public async Task<Result<List<Goalkeeping>>> ExtractGoalkeepingFromUrlAsync(string url, string selector)
     {
         try
@@ -83,10 +106,10 @@ public class SimpleCrawlerService : ISimpleCrawlerService
             var htmlResult = await GetRawHtmlAsync(url);
             if (!htmlResult.Success)
             {
-                return Result<List<Goalkeeping>>.Fail(htmlResult.Message);
+                return Result<List<Goalkeeping>>.Fail(htmlResult.Message!);
             }
 
-            var goalkeepers = await _htmlParser.ExtractGoalkeepingTableAsync(htmlResult.Data, selector);
+            var goalkeepers = await _htmlParser.ExtractGoalkeepingTableAsync(htmlResult.Data!, selector);
             _logger.LogInformation("Extracted {Count} goalkeeping records from {Url}", goalkeepers.Count, url);
 
             return Result<List<Goalkeeping>>.Ok(goalkeepers);
@@ -105,17 +128,17 @@ public class SimpleCrawlerService : ISimpleCrawlerService
             var htmlResult = await GetRawHtmlAsync(url);
             if (!htmlResult.Success)
             {
-                return Result<List<Shooting>>.Fail(htmlResult.Message);
+                return Result<List<Shooting>>.Fail(htmlResult.Message!);
             }
 
-            var shootings = await _htmlParser.ExtractShootingTableAsync(htmlResult.Data, selector);
+            var shootings = await _htmlParser.ExtractShootingTableAsync(htmlResult.Data!, selector);
             _logger.LogInformation("Extracted {Count} shooting records from {Url}", shootings.Count, url);
 
             return Result<List<Shooting>>.Ok(shootings);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error extracting shooting data from {Url}: {Message}", url, ex.Message);
+            _logger.LogError(ex, "Error extracting shooting data from {Url}: {Message}", url, ex.Message!);
             return Result<List<Shooting>>.Fail($"Error extracting shooting data: {ex.Message}");
         }
     }
@@ -127,10 +150,10 @@ public class SimpleCrawlerService : ISimpleCrawlerService
             var htmlResult = await GetRawHtmlAsync(url);
             if (!htmlResult.Success)
             {
-                return Result<List<MatchLog>>.Fail(htmlResult.Message);
+                return Result<List<MatchLog>>.Fail(htmlResult.Message!);
             }
 
-            var matchLogs = await _htmlParser.ExtractMatchLogTableAsync(htmlResult.Data, selector);
+            var matchLogs = await _htmlParser.ExtractMatchLogTableAsync(htmlResult.Data!, selector);
             _logger.LogInformation("Extracted {Count} match logs from {Url}", matchLogs.Count, url);
 
             return Result<List<MatchLog>>.Ok(matchLogs);
@@ -142,7 +165,7 @@ public class SimpleCrawlerService : ISimpleCrawlerService
         }
     }
 
-    public async Task<Result<PlayerDetails>> ExtractPlayerDetailsFromUrlAsync(string url, string selector, string clubName = null)
+    public async Task<Result<PlayerDetails>> ExtractPlayerDetailsFromUrlAsync(string url, string selector, string clubName = null!)
     {
         try
         {
@@ -172,13 +195,13 @@ public class SimpleCrawlerService : ISimpleCrawlerService
     {
         try
         {
-            this._logger.LogInformation("Starting complete data extraction from: {Url} with ID: {Id}", url, id);
+            _logger.LogInformation("Starting complete data extraction from: {Url} with ID: {Id}", url, id);
 
             var htmlResult = await GetRawHtmlAsync(url);
             if (!htmlResult.Success)
                 return Result<CompleteTeamData>.Fail(htmlResult.Message!);
 
-            string teamName = this.ExtractTeamNameFromUrl(url);
+            string teamName = ExtractTeamNameFromUrl(url);
 
             CompleteTeamData completeTeamData = new CompleteTeamData
             {
@@ -194,7 +217,6 @@ public class SimpleCrawlerService : ISimpleCrawlerService
             //     RawHtml = htmlResult.Data!,
             // };
 
-            // Use the same ID for all selectors (as you said ID is same in all cases)
             var tasks = new List<Task>
             {
                 Task.Run(async () =>
@@ -249,19 +271,17 @@ public class SimpleCrawlerService : ISimpleCrawlerService
         ["shooting"] = "//div[contains(@id, 'div_stats_shooting')]//table",
         ["matchLogs"] = "//table[contains(@id, 'matchlogs')]"
     };
-    
+
     private async Task SaveCompleteTeamData(CompleteTeamData teamData, string teamName)
     {
         try
         {
-            // Create a generic league for user-provided URLs
             var league = new League
             {
                 LeagueName = "User Provided",
                 Nation = "Unknown"
             };
 
-            // Save each data type using your existing DataStorageService methods
             if (teamData.Players.Any())
             {
                 await _dataStorage.SavePlayersToJsonAsync(teamData.Players, teamName, league);
@@ -297,10 +317,10 @@ public class SimpleCrawlerService : ISimpleCrawlerService
     {
         try
         {
-            var directoryPath = Path.Combine(_dataStorage.GetType().GetField("_baseDataPath", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(_dataStorage) as string ?? "./Data", 
+            var directoryPath = Path.Combine(_dataStorage.GetType().GetField("_baseDataPath",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(_dataStorage) as string ?? "./Data",
                 "CompleteTeams");
-            
+
             Directory.CreateDirectory(directoryPath);
 
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");

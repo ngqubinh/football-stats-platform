@@ -19,11 +19,26 @@ public class Player
     public int PenaltyKickAttempted { get; set; }
     public int YellowCards { get; set; }
     public int RedCards { get; set; }
+
+    public float ExpectedGoals { get; set; }
+    public float NonPenaltyExpectedGoals { get; set; }
+    public float ExpectedAssistedGoals { get; set; }
+    public float NonPenaltyExpectedGoalsPlusAssistedGoals { get; set; }
+    public int ProgressiveCarries { get; set; }
+    public int ProgressivePasses { get; set; }
+    public int ProgressiveReceptions { get; set; }
+
     public string GoalsPer90s { get; set; } = string.Empty;
     public string AssistsPer90s { get; set; } = string.Empty;
     public string GoalsAssistsPer90s { get; set; } = string.Empty;
     public string NonPenaltyGoalsPer90s { get; set; } = string.Empty;
     public string NonPenaltyGoalsAssistsPer90s { get; set; } = string.Empty;
+
+    public string ExpectedGoalsPer90 { get; set; } = string.Empty;
+    public string ExpectedAssistedGoalsPer90 { get; set; } = string.Empty;
+    public string ExpectedGoalsPlusAssistedGoalsPer90 { get; set; } = string.Empty;
+    public string NonPenaltyExpectedGoalsPer90 { get; set; } = string.Empty;
+    public string NonPenaltyExpectedGoalsPlusAssistedGoalsPer90 { get; set; } = string.Empty;
 
     public string PlayerRefId { get; set; } = string.Empty;
     public string Season { get; set; } = string.Empty;
@@ -32,7 +47,7 @@ public class Player
     public Club Club { get; set; } = null!;
     public Goalkeeping? Goalkeeping { get; set; }
     public Shooting? Shooting { get; set; }
-    
+
     public PlayerDetails? PlayerDetails { get; set; }
 }
 

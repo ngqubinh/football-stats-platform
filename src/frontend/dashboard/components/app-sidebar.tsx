@@ -23,8 +23,13 @@ import {
 const data = {
   navMain: [
     {
-      title: "Crawling",
+      title: "Team/Player... Crawling",
       url: "/data/crawl",
+      icon: IconListDetails,
+    },
+    {
+      title: "League Crawling",
+      url: "/data/squad",
       icon: IconListDetails,
     },
     {

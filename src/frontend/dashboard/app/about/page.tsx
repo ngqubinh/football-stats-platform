@@ -35,8 +35,11 @@ export default function AboutPage() {
     { method: "GET", endpoint: "/api/simplecrawler/player-details", description: "Extract player details" },
     { method: "GET", endpoint: "/api/simplecrawler/raw-html", description: "Get raw HTML" },
     { method: "GET", endpoint: "/api/simplecrawler/all-data", description: "Extract all data" },
+    { method: "GET", endpoint: "/api/simplecrawler/squad-standard", description: "Extract squad information from league" },
     { method: "GET", endpoint: "/api/simplecrawler/download-json", description: "Download JSON" },
     { method: "GET", endpoint: "/api/simplecrawler/download-zip", description: "Download ZIP" },
+    { method: "GET", endpoint: "/api/simplecrawler/download-squad-standard-json", description: "Download squad standard data as JSON" },
+    { method: "GET", endpoint: "/api/simplecrawler/download-squad-standard-zip", description: "Download squad standard data as ZIP" },
   ];
 
   return (
@@ -113,15 +116,14 @@ export default function AboutPage() {
                   {`
 ┌─────────────────┐ ┌──────────────────┐ ┌─────────────────┐
 │ Next.js         │ │ .NET 8 API       │ │ PostgreSQL      │
-│ Dashboard       │◄──►│ Backend         │◄──►│ Database       │
-│ (Vercel)        │ │ (EC2)           │ │ (RDS)           │
+│ Dashboard       │◄──►│ Backend         │◄──►│ Database   │
+│ (Vercel)        │ │ (EC2)           │  │ (RDS)           │
 └─────────────────┘ └──────────────────┘ └─────────────────┘
-          │                  │                  │
+          │                  │                  │         |
           └───────────────────────┼───────────────────────┘
                                  │
                         ┌───────────┴───────────┐
                         │     FBref Crawler     │
-                        │ (Scheduled Daily)     │
                         └───────────────────────┘
                   `}
                 </pre>
