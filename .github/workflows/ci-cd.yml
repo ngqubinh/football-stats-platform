@@ -131,7 +131,7 @@ jobs:
         id: meta-ecr
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/football-stats-platform
+          images: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/football-stats-platform-ecr
           tags: |
             type=sha
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
@@ -206,7 +206,7 @@ jobs:
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
             
             # Pull the latest image from ECR
-            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform:latest
+            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform-ecr:latest
             
             # Pull the latest image from Docker Hub
             #docker pull $DOCKERHUB_USERNAME/football-stats-platform:latest
