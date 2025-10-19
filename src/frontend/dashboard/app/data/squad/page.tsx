@@ -48,7 +48,11 @@ export default function SquadStandardExtractionPage() {
       await extractSquadStandard(url, selector).unwrap();
       toast.success('Squad standard data extracted successfully!');
     } catch (error) {
-      toast.error('Failed to extract data');
+      if (error instanceof Error) {
+        toast.error(`Failed to extract data: ${error.message}`);
+      } else {
+        toast.error('Failed to extract data: Unknown error');
+      }
     }
   };
 
@@ -72,7 +76,11 @@ export default function SquadStandardExtractionPage() {
       await downloadSquadStandardJson(url, selector).unwrap();
       toast.success('JSON downloaded successfully');
     } catch (error) {
-      toast.error(downloadSquadStandardError || 'Failed to download JSON');
+      if (error instanceof Error) {
+        toast.error(downloadSquadStandardError || 'Failed to download JSON');
+      } else {
+        toast.error('Failed to download JSON');
+      }
     }
   };
 
@@ -96,7 +104,11 @@ export default function SquadStandardExtractionPage() {
       await downloadSquadStandardZip(url, selector).unwrap();
       toast.success('ZIP downloaded successfully');
     } catch (error) {
-      toast.error(downloadSquadStandardError || 'Failed to download ZIP');
+      if (error instanceof Error) {
+        toast.error(downloadSquadStandardError || 'Failed to download ZIP');
+      } else {
+        toast.error('Failed to download ZIP');
+      }
     }
   };
 

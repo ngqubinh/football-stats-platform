@@ -39,10 +39,15 @@ export default function DataExtractionPage() {
     try {
       await extractAllData(url, id);
       toast.success('Data extracted successfully!');
-    } catch (error) {
-      toast.error('Failed to extract data');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(`Failed to extract data: ${error.message}`);
+      } else {
+        toast.error('Failed to extract data: Unknown error');
+      }
     }
-  };
+}
+
 
   const handleDownloadJson = () => {
     if (!url || !id) {

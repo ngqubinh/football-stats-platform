@@ -105,7 +105,6 @@ import {
 } from "@/components/ui/tabs"
 import { useFootball } from "@/hooks/useFootball"
 import { League, Club, Player } from "@/types/football_type"
-import { useEffect } from "react"
 
 export const schema = z.object({
   id: z.number(),
@@ -687,9 +686,7 @@ export function TableCellViewer({ item, type }: { item: z.infer<typeof schema>, 
 }
 
 
-export function DataTable({
-  data: initialData,
-}: {
+export function DataTable({}: {
   data: z.infer<typeof schema>[]
 }) {
   const { leagues, clubs, players, selectedLeagueId, selectedClubId, setSelectedLeagueId, setSelectedClubId, status, error } = useFootball();

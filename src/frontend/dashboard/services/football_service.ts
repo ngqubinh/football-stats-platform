@@ -1,7 +1,8 @@
 import { Club, ClubTrend, EnhancedSquadResponse, EnhancedTeamDataResponse, Goalkeeping, League, Player, PlayerSeasonComparison, Shooting, UrlInformation } from "@/types/football_type";
 import { toast } from "sonner";
 
-const API_BASE_URL = 'http://localhost:5000';
+// const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://www.renragecnannhoj.site';
 
 const METHODs = {
   GET: "GET",
