@@ -247,8 +247,8 @@ jobs:
           #   dotnet ef database update --connection "$RDS_PROD_CONNECTION_STRING"
           ssh -o StrictHostKeyChecking=no -i ssh_key.pem ubuntu@$EC2_HOST << EOF
             aws ecr get-login-password --region $AWS_REGION \
-              | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com  
-            docker run --rm \
+              | sudo docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com  
+            sudo docker run --rm \
               -e ConnectionStrings__postgreSQL="$RDS_PROD_CONNECTION_STRING" \
               $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform-ecr:latest \
               dotnet ef database update
