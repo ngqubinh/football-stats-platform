@@ -201,9 +201,10 @@ jobs:
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
           # SSH to EC2 and deploy
-          ssh -o StrictHostKeyChecking=no -i ssh_key.pem ubuntu@$EC2_HOST << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i ssh_key.pem ubuntu@$EC2_HOST << EOF
             # Log in to ECR on EC2
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            aws ecr get-login-password --region $AWS_REGION \
+              | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
             
             # Pull the latest image from ECR
             docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform-ecr:latest
@@ -211,22 +212,21 @@ jobs:
             # Pull the latest image from Docker Hub
             #docker pull $DOCKERHUB_USERNAME/football-stats-platform:latest
             #docker run -d --name backend-container -p 5000:5000 --env-file /home/ec2-user/.env $DOCKERHUB_USERNAME/football-stats-platform:latest
-
             
             # Stop and remove existing container (if any)
-            docker stop backend-container || true
-            docker rm backend-container || true
+            sudo docker stop backend-container || true
+            sudo docker rm backend-container || true
             
             # Run the new container
             # docker run -d --name backend-container -p 5000:5000 \
             #   --env-file /home/ec2-user/.env \
             #   $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform:latest
-            docker run -d --name backend-container -p 5000:5000 \
+            sudo docker run -d --name backend-container -p 5000:5000 \
               -e ConnectionStrings__postgreSQL="$RDS_PROD_CONNECTION_STRING" \
               $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform-ecr:latest
 
             # Clean up unused images
-            docker image prune -f
+            sudo docker image prune -f
           EOF
 
           # Clean up SSH key
