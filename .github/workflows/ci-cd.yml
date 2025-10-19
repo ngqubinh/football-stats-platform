@@ -165,6 +165,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Log in to Amazon ECR
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
@@ -175,13 +182,6 @@ jobs:
       #     docker tag football-stats-platform:latest \
       #       ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/football-stats-platform:latest
       #     docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/football-stats-platform:latest
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy to EC2
         env:
@@ -223,7 +223,7 @@ jobs:
             #   $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform:latest
             docker run -d --name backend-container -p 5000:5000 \
               -e ConnectionStrings__postgreSQL="$RDS_PROD_CONNECTION_STRING" \
-              $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform:latest
+              $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform-ecr:latest
 
             # Clean up unused images
             docker image prune -f
@@ -249,7 +249,7 @@ jobs:
             aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
             docker run --rm \
               -e ConnectionStrings__postgreSQL="$RDS_PROD_CONNECTION_STRING" \
-              $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform:latest \
+              $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform-ecr:latest \
               dotnet ef database update
           EOF
           rm ssh_key.pem
