@@ -1,5 +1,5 @@
 {
-  "name": "orcish-dashboard",
+  "name": "fsp-dashboard",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -35,12 +35,15 @@
     "next-themes": "^0.4.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "recharts": "^3.2.1",
+    "recharts": "^2.12.7",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "tw-animate-css": "^1.3.8",
     "vaul": "^1.1.2",
     "zod": "^4.1.9"
+  },
+  "overrides": {
+    "react-is": "^18.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
