@@ -65,10 +65,19 @@ jobs:
       #     sudo chmod +x /usr/local/bin/docker-compose
 
       - name: Run docker-compose to verify
+        env:
+          RDS_CONNECTION_STRING: ${{ secrets.RDS_CONNECTION_STRING }} # remove if do not user AWS RDS
         run: |
           docker compose -f infra/docker/docker-compose.yml up -d
-          sleep 10
-          curl --fail http://localhost:5000/health || exit 1
+          for i in {1..30}; do
+            if curl --fail http://localhost:5000/health; then
+              echo "Backend is healthy"
+              break
+            fi
+            echo "Waiting for backend..."
+            sleep 5
+          done
+          docker compose -f infra/docker/docker-compose.yml logs backend
           docker compose -f infra/docker/docker-compose.yml down
 
       - name: Upload build artifacts
@@ -77,18 +86,6 @@ jobs:
           name: backend-build
           path: src/FSP/bin/Release/net8.0/
           retention-days: 7
-
-      # - name: Build and push Docker image
-      #   if: github.event_name == 'release' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
-      #   uses: docker/build-push-action@bc621f09ee16acd1f79aa78a3d23d7c5d5f4e546
-      #   with:
-      #     context: infra/docker
-      #     file: infra/docker/Dockerfile
-      #     push: true
-      #     tags: ${{ steps.meta.outputs.tags }}
-      #     labels: ${{ steps.meta.outputs.labels }}
-      #     cache-from: type=gha # Use GitHub Actions cache for faster builds
-      #     cache-to: type=gha,mode=max
 
   push-images:
     needs: build-and-test
@@ -107,7 +104,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+      - name: Extract metadata (tags, labels) Docker Hub
         id: meta
         # uses: docker/metadata-action@dbef88086f6cef02e264edb7dbf63250c17cf6de9 it make "unable to find version" error
         uses: docker/metadata-action@v5
@@ -119,75 +127,129 @@ jobs:
             type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }} # :dev on dev branch
             type=ref,event=tag # Adds :v1.1.0 for releases
 
+      - name: Extract metadata (tags, labels) for AWS ECR
+        id: meta-ecr
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/football-stats-platform-ecr
+          tags: |
+            type=sha
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/dev' }}
+            type=ref,event=tag
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          driver: docker-container  # Use containerd-based driver for GHA cache support
+          driver: docker-container # Use containerd-based driver for GHA cache support
 
-
-      - name: Build and push Docker image
+      - name: Build and push to Docker Hub and AWS ECR
         uses: docker/build-push-action@v6
         with:
-          context: . 
+          context: .
           file: infra/docker/FSP.Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            ${{ steps.meta-ecr.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # deploy-dev:
-  #   needs: build-and-test
-  #   if: github.ref == 'refs/heads/dev'
-  #   runs-on: ubuntu-latest
-  #   environment: development
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Deploy Frontend to Vercel
-  #       uses: amondnet/vercel-action@v20
-  #       with:
-  #         vercel-token: ${{ secrets.VERCEL_TOKEN }}
-  #         vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-  #         vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-  #         working-directory: ./frontend
-  #         prod: false # Preview deployment for dev
-  #
-  #     - name: Push Docker to AWS ECR and Deploy to EC2
-  #       env:
-  #         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         AWS_REGION: us-east-1 # Your region
-  #       run: |
-  #         aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com
-  #         docker tag your-dockerhub-username/backend:latest your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com/your-repo/backend:latest
-  #         docker push your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com/your-repo/backend:latest
-  #
-  #         # SSH to EC2 and pull/update (use EC2 instance ID or key)
-  #         ssh -o StrictHostKeyChecking=no -i ${{ secrets.EC2_SSH_KEY }} ec2-user@your-ec2-ip "
-  #           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com &&
-  #           docker pull your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com/your-repo/backend:latest &&
-  #           docker stop backend-container || true &&
-  #           docker rm backend-container || true &&
-  #           docker run -d --name backend-container -p 5000:5000 --env-file .env your-account-id.dkr.ecr.$AWS_REGION.amazonaws.com/your-repo/backend:latest
-  #         "
-  #
-  #         # Handle DB migrations (e.g., EF Core)
-  #         ssh ... "cd /app/backend && dotnet ef database update --connection ${{ secrets.RDS_DEV_CONNECTION_STRING }}"
-  #
-  # deploy-prod:
-  #   needs: build-and-test
-  #   if: startsWith(github.ref, 'refs/tags/v')
-  #   runs-on: ubuntu-latest
-  #   environment: production
-  #   steps:
-  #     # Similar to deploy-dev but with prod flags, approvals, and prod secrets
-  #     - name: Deploy Frontend to Vercel (Prod)
-  #       uses: amondnet/vercel-action@v20
-  #       with:
-  #         # ... same as above but prod: true
-  #         prod: true
+  deploy-prod:
+    needs: push-images
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  # Similar AWS/EC2 steps for prod, with RDS prod connection
-  # Add manual approval if needed: uses: trstringer/manual-approval@v1
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+
+      # - name: Build, tag, and push image to ECR
+      #   run: |
+      #     docker build -t football-stats-platform:latest -f infra/docker/FSP.Dockerfile .
+      #     docker tag football-stats-platform:latest \
+      #       ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/football-stats-platform:latest
+      #     docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/football-stats-platform:latest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to EC2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          RDS_PROD_CONNECTION_STRING: ${{ secrets.RDS_PROD_CONNECTION_STRING }}
+        run: |
+          # Save SSH key to a temporary file
+          echo "$EC2_SSH_KEY" > ssh_key.pem
+          chmod 600 ssh_key.pem
+
+          # Log in to ECR on the runner
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+          # SSH to EC2 and deploy
+          ssh -o StrictHostKeyChecking=no -i ssh_key.pem ec2-user@$EC2_HOST << 'EOF'
+            # Log in to ECR on EC2
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            
+            # Pull the latest image from ECR
+            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform-ecr:latest
+            
+            # Pull the latest image from Docker Hub
+            #docker pull $DOCKERHUB_USERNAME/football-stats-platform:latest
+            #docker run -d --name backend-container -p 5000:5000 --env-file /home/ec2-user/.env $DOCKERHUB_USERNAME/football-stats-platform:latest
+
+            
+            # Stop and remove existing container (if any)
+            docker stop backend-container || true
+            docker rm backend-container || true
+            
+            # Run the new container
+            # docker run -d --name backend-container -p 5000:5000 \
+            #   --env-file /home/ec2-user/.env \
+            #   $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform:latest
+            docker run -d --name backend-container -p 5000:5000 \
+              -e ConnectionStrings__postgreSQL="$RDS_PROD_CONNECTION_STRING" \
+              $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform:latest
+
+            # Clean up unused images
+            docker image prune -f
+          EOF
+
+          # Clean up SSH key
+          rm ssh_key.pem
+
+      - name: Run database migrations
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          RDS_PROD_CONNECTION_STRING: ${{ secrets.RDS_PROD_CONNECTION_STRING }}
+        run: |
+          echo "$EC2_SSH_KEY" > ssh_key.pem
+          chmod 600 ssh_key.pem
+          # ssh -o StrictHostKeyChecking=no -i ssh_key.pem ec2-user@$EC2_HOST << 'EOF'
+          #   cd /home/ec2-user/app
+          #   dotnet ef database update --connection "$RDS_PROD_CONNECTION_STRING"
+          ssh -o StrictHostKeyChecking=no -i ssh_key.pem ec2-user@$EC2_HOST << 'EOF'
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            docker run --rm \
+              -e ConnectionStrings__postgreSQL="$RDS_PROD_CONNECTION_STRING" \
+              $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform:latest \
+              dotnet ef database update
+          EOF
+          rm ssh_key.pem

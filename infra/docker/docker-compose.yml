@@ -7,10 +7,12 @@ services:
       - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__postgreSQL=Host=db;Database=football_stats;Username=postgres;Password=password
-    depends_on:
-      db:
-        condition: service_healthy
+      # - ConnectionStrings__postgreSQL=Host=football-stats-platform-db.csvoiwsw23yu.us-east-1.rds.amazonaws.com;Database=football-stats-platform-db;Username=postgres;Password=quocbinh01
+      # - ConnectionStrings__postgreSQL=Host=db;Database=football_stats;Username=postgres;Password=password --> local
+      - ConnectionStrings__postgreSQL=${RDS_CONNECTION_STRING}
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health || exit 1"]
       interval: 30s
@@ -36,22 +38,22 @@ services:
   #     retries: 3
   #     start_period: 30s
 
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: football_stats
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d football_stats"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+  # db:
+  #   image: postgres:15
+  #   environment:
+  #     POSTGRES_DB: football_stats
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres -d football_stats"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 30s
 
-volumes:
-  postgres_data:
+# volumes:
+#   postgres_data: --> Removed since RDS is used
