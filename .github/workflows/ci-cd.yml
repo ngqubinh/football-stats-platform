@@ -69,8 +69,15 @@ jobs:
           RDS_CONNECTION_STRING: ${{ secrets.RDS_CONNECTION_STRING }} # remove if do not user AWS RDS
         run: |
           docker compose -f infra/docker/docker-compose.yml up -d
-          sleep 10
-          curl --fail http://localhost:5000/health || exit 1
+          for i in {1..30}; do
+            if curl --fail http://localhost:5000/health; then
+              echo "Backend is healthy"
+              break
+            fi
+            echo "Waiting for backend..."
+            sleep 5
+          done
+          docker compose -f infra/docker/docker-compose.yml logs backend
           docker compose -f infra/docker/docker-compose.yml down
 
       - name: Upload build artifacts
