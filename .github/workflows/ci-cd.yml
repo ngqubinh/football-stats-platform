@@ -176,12 +176,6 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
 
-      # - name: Build, tag, and push image to ECR
-      #   run: |
-      #     docker build -t football-stats-platform:latest -f infra/docker/FSP.Dockerfile .
-      #     docker tag football-stats-platform:latest \
-      #       ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/football-stats-platform:latest
-      #     docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/football-stats-platform:latest
 
       - name: Deploy to EC2
         env:
@@ -254,7 +248,8 @@ jobs:
 
             sudo docker run --rm \
               -e ConnectionStrings__postgreSQL="$RDS_PROD_CONNECTION_STRING" \
+              --entrypoint dotnet \
               $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform-ecr:latest \
-              dotnet ef database update
+                ef database update
           EOF
           rm ssh_key.pem
