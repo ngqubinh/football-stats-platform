@@ -239,6 +239,8 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
           RDS_PROD_CONNECTION_STRING: ${{ secrets.RDS_PROD_CONNECTION_STRING }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           echo "$EC2_SSH_KEY" > ssh_key.pem
           chmod 600 ssh_key.pem
@@ -246,8 +248,10 @@ jobs:
           #   cd /home/ec2-user/app
           #   dotnet ef database update --connection "$RDS_PROD_CONNECTION_STRING"
           ssh -o StrictHostKeyChecking=no -i ssh_key.pem ubuntu@$EC2_HOST << EOF
+            set -e
             aws ecr get-login-password --region $AWS_REGION \
               | sudo docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com  
+
             sudo docker run --rm \
               -e ConnectionStrings__postgreSQL="$RDS_PROD_CONNECTION_STRING" \
               $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/football-stats-platform-ecr:latest \
