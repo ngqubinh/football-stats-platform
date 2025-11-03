@@ -14,4 +14,8 @@ public interface IFootballService
     Task<Result<Goalkeeping>> GetCurrentGoalkeepingByPlayerAsync(string playerRefId);
     Task<Result<Shooting>> GetCurrentShootingByPlayerAsync(string playerRefId);
     Task<Result<IEnumerable<ClubTrendDto>>> GetClubTrendAsync(int clubId, int numberOfSeasons = 5);
+    Task<Result<IEnumerable<Player>>> GetCorePlayersByClubAsync(int clubId);
+    Task<Result<IEnumerable<PlayerWithScore>>> GetPlayerScoresByClubAsync(int clubId);
+    Task<Result<LineupAnalysis>> AnalyzeLineupAsync(int clubId, LineupInput lineupInput);
+    Task<Result<TwoTeamComparison>> CompareTwoTeamsAsync(TwoTeamLineupInput twoTeamInput);
 }

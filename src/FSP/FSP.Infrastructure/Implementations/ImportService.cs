@@ -265,7 +265,6 @@ public class ImportService : IImportService
 
     private async Task UpsertPlayerAsync(JsonElement item, string playerName, int clubId, string season)
     {
-        // DEBUG LOGGING (unchanged)
         _logger.LogInformation("=== DEBUG START ===");
         _logger.LogInformation("Incoming playerName parameter: {PlayerName}, Season: {Season}", playerName, season);
         var allProperties = new List<string>();
@@ -338,7 +337,7 @@ public class ImportService : IImportService
             existingPlayer.NonPenaltyExpectedGoalsPer90 = GetPropertyStringSafe(item, "nonPenaltyExpectedGoalsPer90", "NonPenaltyExpectedGoalsPer90");
             existingPlayer.NonPenaltyExpectedGoalsPlusAssistedGoalsPer90 = GetPropertyStringSafe(item, "nonPenaltyExpectedGoalsPlusAssistedGoalsPer90", "NonPenaltyExpectedGoalsPlusAssistedGoalsPer90");
             existingPlayer.ClubId = clubId;
-            _logger.LogInformation("✅ AFTER UPDATE - PlayerName: {PlayerName}, Nation: {Nation}, Season: {Season}",
+            this._logger.LogInformation("✅ AFTER UPDATE - PlayerName: {PlayerName}, Nation: {Nation}, Season: {Season}",
                 existingPlayer.PlayerName, existingPlayer.Nation, existingPlayer.Season);
         }
         else
@@ -394,45 +393,95 @@ public class ImportService : IImportService
         await _dbContext.SaveChangesAsync();
     }
 
+    // private string GetSeasonForClub(string clubName, string targetSeason = null!)
+    // {
+    //     _logger.LogInformation("🔍 Looking for club '{ClubName}' with target season '{TargetSeason}'", clubName, targetSeason);
+
+    //     // Look in Premier League teams
+    //     foreach (var team in PremierLeagueURLS.Urls)
+    //     {
+    //         if (team.Label.Equals(clubName, StringComparison.OrdinalIgnoreCase))
+    //         {
+    //             _logger.LogInformation("Found club '{ClubName}' in Premier League. Available seasons: {Seasons}",
+    //                 clubName, string.Join(", ", team.SeasonUrls.Select(s => s.Season)));
+
+    //             // If targetSeason is provided, prioritize it
+    //             if (!string.IsNullOrEmpty(targetSeason))
+    //             {
+    //                 var matchingSeasonUrl = team.SeasonUrls.FirstOrDefault(s => s.Season.Equals(targetSeason, StringComparison.OrdinalIgnoreCase));
+    //                 if (matchingSeasonUrl != null)
+    //                 {
+    //                     _logger.LogInformation("✅ Target season '{TargetSeason}' found for '{ClubName}' with URL: {Url}",
+    //                         targetSeason, clubName, matchingSeasonUrl.URL);
+    //                     return targetSeason;
+    //                 }
+    //                 else
+    //                 {
+    //                     _logger.LogWarning("❌ Target season '{TargetSeason}' not found for '{ClubName}'. Falling back to first available season.",
+    //                         targetSeason, clubName);
+    //                 }
+    //             }
+
+    //             // Fall back to first available season
+    //             var fallbackSeason = team.SeasonUrls.FirstOrDefault()?.Season;
+    //             _logger.LogInformation("Using fallback season '{FallbackSeason}' for '{ClubName}'", fallbackSeason, clubName);
+    //             return fallbackSeason ?? "2025-2026";
+    //         }
+    //     }
+
+    //     _logger.LogWarning("Club '{ClubName}' not found in any configuration. Using default season '{DefaultSeason}'", clubName, "2025-2026");
+    //     return "2025-2026";
+    // }
+
     private string GetSeasonForClub(string clubName, string targetSeason = null!)
     {
         _logger.LogInformation("🔍 Looking for club '{ClubName}' with target season '{TargetSeason}'", clubName, targetSeason);
 
-        // Look in Premier League teams
-        foreach (var team in PremierLeagueURLS.Urls)
+        // Combine all teams from all leagues
+        var allTeams = PremierLeagueURLS.Urls
+            .Concat(RomaniaLiga1URLS.Urls)
+            .Concat(TurkeySuperLigURLS.Urls);
+
+        var team = allTeams.FirstOrDefault(t => t.Label.Equals(clubName, StringComparison.OrdinalIgnoreCase));
+
+        if (team != null)
         {
-            if (team.Label.Equals(clubName, StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogInformation("Found club '{ClubName}' in Premier League. Available seasons: {Seasons}",
-                    clubName, string.Join(", ", team.SeasonUrls.Select(s => s.Season)));
+            _logger.LogInformation("Found club '{ClubName}' in {LeagueName}. Available seasons: {Seasons}",
+                clubName, team.League.LeagueName, string.Join(", ", team.SeasonUrls.Select(s => s.Season)));
 
-                // If targetSeason is provided, prioritize it
-                if (!string.IsNullOrEmpty(targetSeason))
-                {
-                    var matchingSeasonUrl = team.SeasonUrls.FirstOrDefault(s => s.Season.Equals(targetSeason, StringComparison.OrdinalIgnoreCase));
-                    if (matchingSeasonUrl != null)
-                    {
-                        _logger.LogInformation("✅ Target season '{TargetSeason}' found for '{ClubName}' with URL: {Url}",
-                            targetSeason, clubName, matchingSeasonUrl.URL);
-                        return targetSeason;
-                    }
-                    else
-                    {
-                        _logger.LogWarning("❌ Target season '{TargetSeason}' not found for '{ClubName}'. Falling back to first available season.",
-                            targetSeason, clubName);
-                    }
-                }
-
-                // Fall back to first available season
-                var fallbackSeason = team.SeasonUrls.FirstOrDefault()?.Season;
-                _logger.LogInformation("Using fallback season '{FallbackSeason}' for '{ClubName}'", fallbackSeason, clubName);
-                return fallbackSeason ?? "2025-2026";
-            }
+            return GetSeasonFromTeam(team, targetSeason, clubName);
         }
 
         _logger.LogWarning("Club '{ClubName}' not found in any configuration. Using default season '{DefaultSeason}'", clubName, "2025-2026");
         return "2025-2026";
     }
+
+    private string GetSeasonFromTeam(FbrefTag team, string targetSeason, string clubName)
+    {
+        // If targetSeason is provided, prioritize it
+        if (!string.IsNullOrEmpty(targetSeason))
+        {
+            var matchingSeasonUrl = team.SeasonUrls.FirstOrDefault(s => s.Season.Equals(targetSeason, StringComparison.OrdinalIgnoreCase));
+            if (matchingSeasonUrl != null)
+            {
+                _logger.LogInformation("✅ Target season '{TargetSeason}' found for '{ClubName}' with URL: {Url}",
+                    targetSeason, clubName, matchingSeasonUrl.URL);
+                return targetSeason;
+            }
+            else
+            {
+                _logger.LogWarning("❌ Target season '{TargetSeason}' not found for '{ClubName}'. Falling back to first available season.",
+                    targetSeason, clubName);
+            }
+        }
+
+        // Fall back to first available season
+        var fallbackSeason = team.SeasonUrls.FirstOrDefault()?.Season;
+        _logger.LogInformation("Using fallback season '{FallbackSeason}' for '{ClubName}'", fallbackSeason, clubName);
+        return fallbackSeason ?? "2025-2026";
+    }
+
+
 
     private float GetPropertyFloatSafe(JsonElement element, string primaryName, string fallbackName)
     {

@@ -1,0 +1,150 @@
+{
+  "team_a": {
+    "club_id": 4,
+    "club_name": "Sassuolo",
+    "formation": "4-3-3",
+    "players": [
+      {
+        "player_ref_id": "7679208104996738185",
+        "player_name": "Arijanet Muric",
+        "position": "GK",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3099027951636592699",
+        "player_name": "Sebastian Walukiewicz",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "5072430809480217481",
+        "player_name": "Jay Idzes",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "6963876245499337044",
+        "player_name": "Filippo Romagna",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "53143394690285069",
+        "player_name": "Josh Doig",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "5009153276437209039",
+        "player_name": "Aster Vranckx",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2198189566406494827",
+        "player_name": "Nemanja Matić",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "7198998960347912248",
+        "player_name": "Ismaël Koné",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "5231888151562819101",
+        "player_name": "Domenico Berardi",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2444513449176524803",
+        "player_name": "Andrea Pinamonti",
+        "position": "FW",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "7885484920604126005",
+        "player_name": "Armand Lauriente",
+        "position": "MF",
+        "is_starting": true
+      }
+    ]
+  },
+  "team_b": {
+    "club_id": 3,
+    "club_name": "Roma",
+    "formation": "3-5-2",
+    "players": [
+      {
+        "player_ref_id": "4913542427050329272",
+        "player_name": "Mile Svilar",
+        "position": "GK",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "356644406188467226",
+        "player_name": "Zeki Çelik",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "8779927903073853762",
+        "player_name": "Gianluca Mancini",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "9129729279191279314",
+        "player_name": "Obite N'Dicka",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3392819035179255658",
+        "player_name": "Wesley",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "6106243159834740134",
+        "player_name": "Bryan Cristante",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "1471410985330364874",
+        "player_name": "Manu Koné",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "4796745448410835004",
+        "player_name": "Kostas Tsimikas",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "8226126167401193273",
+        "player_name": "Matías Soulé",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2182563896684778073",
+        "player_name": "Lorenzo Pellegrini",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "459036421099091309",
+        "player_name": "Artem Dovbyk",
+        "position": "FW",
+        "is_starting": true
+      }
+    ]
+  },
+  "match_date": "2025-10-26",
+  "venue": "Mapei Stadium"
+}

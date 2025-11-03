@@ -1,0 +1,150 @@
+{
+  "team_a": {
+    "club_id": 1,
+    "club_name": "Arsenal",
+    "formation": "4-3-3",
+    "players": [
+      {
+        "player_ref_id": "4245198629112617553",
+        "player_name": "David Raya",
+        "position": "GK",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "7597044678631713813",
+        "player_name": "Jurriën Timber",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "830744169513747387",
+        "player_name": "William Saliba",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "8589825861964150462",
+        "player_name": "Gabriel Magalhães",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "5858915197315698207",
+        "player_name": "Riccardo Calafiori",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "8534402183541102143",
+        "player_name": "Eberechi Eze",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3348606573659539064",
+        "player_name": "Martín Zubimendi",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "7985285672964366836",
+        "player_name": "Declan Rice",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2420668420740885496",
+        "player_name": "Bukayo Saka",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "8097079953001675850",
+        "player_name": "Viktor Gyökeres",
+        "position": "FW",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "4148330981796300741",
+        "player_name": "Leandro Trossard",
+        "position": "MF",
+        "is_starting": true
+      }
+    ]
+  },
+  "team_b": {
+    "club_id": 2,
+    "club_name": "Crystal Palace",
+    "formation": "3-4-2-1",
+    "players": [
+      {
+        "player_ref_id": "1897700432439232701",
+        "player_name": "Dean Henderson",
+        "position": "GK",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "736957891855189270",
+        "player_name": "Chris Richards",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "7187010657863401363",
+        "player_name": "Maxence Lacroix",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "4285589783519302642",
+        "player_name": "Marc Guéhi",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "212128880169465035",
+        "player_name": "Daniel Muñoz",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "1993090999438576310",
+        "player_name": "Adam Wharton",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "7742716224001756149",
+        "player_name": "Daichi Kamada",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "1668529973446509233",
+        "player_name": "Tyrick Mitchell",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "780819705352701753",
+        "player_name": "Ismaila Sarr",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "4888158871544653579",
+        "player_name": "Yeremi Pino",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "6140969572755648324",
+        "player_name": "Jean-Philippe Mateta",
+        "position": "FW",
+        "is_starting": true
+      }
+    ]
+  },
+  "match_date": "2025-10-25",
+  "venue": "Home Stadium"
+}

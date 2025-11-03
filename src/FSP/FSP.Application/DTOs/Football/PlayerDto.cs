@@ -224,3 +224,36 @@ public class ShootingDto
     [JsonPropertyName("player_ref_id")]
     public string PlayerRefId { get; set; } = string.Empty;
 }
+
+public class PlayerWithScoreDto
+{
+    [JsonPropertyName("player")]
+    public PlayerDto Player { get; set; } = null!;
+
+    [JsonPropertyName("score")]
+    public float Score { get; set; }
+
+    [JsonPropertyName("position_category")]
+    public string PositionCategory { get; set; } = string.Empty;
+
+    [JsonPropertyName("primary_position")]
+    public string PrimaryPosition { get; set; } = string.Empty;
+
+    [JsonPropertyName("rank")]
+    public int Rank { get; set; }
+}
+
+public class PlayerScoreSummaryDto
+{
+    [JsonPropertyName("total_players")]
+    public int TotalPlayers { get; set; }
+
+    [JsonPropertyName("average_score")]
+    public double AverageScore { get; set; }
+
+    [JsonPropertyName("top_scorer")]
+    public PlayerWithScoreDto? TopScorer { get; set; }
+
+    [JsonPropertyName("players")]
+    public IEnumerable<PlayerWithScoreDto> Players { get; set; } = new List<PlayerWithScoreDto>();
+}

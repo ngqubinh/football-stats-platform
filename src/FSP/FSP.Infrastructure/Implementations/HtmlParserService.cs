@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using FSP.Domain.Entities.Core;
 using FSP.Domain.Interfaces.Core;
 using HtmlAgilityPack;
@@ -108,93 +109,284 @@ public class HtmlParserService : IHtmlParserService
         });
     }
 
-    public async Task<List<Player>> ExtractPlayersTableAsync(string html, string selector)
+    public async Task<List<Player>> ExtractPlayersTableAsync(string html, string selector = null!)
     {
         return await Task.Run(() =>
         {
             var players = new List<Player>();
-            var htmlDoc = new HtmlDocument();
-            htmlDoc.LoadHtml(html);
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
 
-            var table = htmlDoc.DocumentNode.SelectSingleNode(selector);
+            // DEBUG: Log all table IDs
+            var allTables = doc.DocumentNode.SelectNodes("//table[@id]");
+            if (allTables != null)
+            {
+                var tableIds = allTables.Select(t => t.GetAttributeValue("id", "no-id")).ToList();
+                _logger.LogInformation("ALL TABLE IDs FOUND: {TableIds}", string.Join(", ", tableIds));
+            }
+
+            HtmlNode? table = null;
+
+            // 1. Explicit selector
+            if (!string.IsNullOrWhiteSpace(selector))
+            {
+                _logger.LogInformation("Searching with explicit selector: {Selector}", selector);
+                table = doc.DocumentNode.SelectSingleNode(selector);
+                _logger.LogInformation("Explicit selector result: {Result}", table != null ? "FOUND" : "NOT FOUND");
+            }
+
+            // 2. Fallback: squad ID
             if (table == null)
             {
-                _logger.LogWarning("Table not found with selector: {Selector}", selector);
+                _logger.LogWarning("Falling back to squad ID extraction");
+                var squadId = ExtractSquadId(doc);
+                _logger.LogInformation("Extracted squad ID: {SquadId}", squadId);
+
+                if (squadId != null)
+                {
+                    var fallbackSelector = $"//table[@id='stats_standard_{squadId}']";
+                    _logger.LogInformation("Trying fallback selector: {Selector}", fallbackSelector);
+                    table = doc.DocumentNode.SelectSingleNode(fallbackSelector);
+                    _logger.LogInformation("Fallback selector result: {Result}", table != null ? "FOUND" : "NOT FOUND");
+                }
+            }
+
+            // 3. Ultimate fallback: header pattern
+            if (table == null)
+            {
+                _logger.LogWarning("Using ultimate fallback - pattern matching");
+                table = FindTableByHeaderPattern(doc, new[] { "player", "nation", "pos", "age", "mp" }, "Player Standard");
+                _logger.LogInformation("Ultimate fallback result: {Result}", table != null ? "FOUND" : "NOT FOUND");
+            }
+
+            if (table == null)
+            {
+                _logger.LogError("NO PLAYER TABLE FOUND AFTER ALL ATTEMPTS");
                 return players;
             }
 
-            var rows = table.SelectNodes(".//tbody/tr[not(contains(@class, 'thead')) and ./th[@data-stat='player' and .//a]]");
+            var tableId = table.GetAttributeValue("id", "unknown");
+            _logger.LogInformation("USING TABLE: {TableId}", tableId);
+
+            // === STEP 1: Extract headers ===
+            var headerRow = table.SelectSingleNode(".//thead/tr[last()]");
+            if (headerRow == null)
+            {
+                _logger.LogError("No header row found in table {TableId}", tableId);
+                return players;
+            }
+
+            var headerCells = headerRow.SelectNodes("./th | ./td");
+            if (headerCells == null || headerCells.Count == 0)
+            {
+                _logger.LogError("No header cells found in table {TableId}", tableId);
+                return players;
+            }
+
+            var headers = headerCells
+                .Select(h => CleanHeader(h.InnerText))
+                .ToList();
+
+            _logger.LogInformation("TABLE HEADERS ({Count}): {Headers}",
+                headers.Count, string.Join(" | ", headers.Take(20)));
+
+            // === STEP 2: Build MULTI-INDEX MAP (supports duplicates) ===
+            var colIndex = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < headers.Count; i++)
+            {
+                var header = headers[i];
+                if (string.IsNullOrEmpty(header)) continue;
+
+                if (!colIndex.ContainsKey(header))
+                    colIndex[header] = new List<int>();
+
+                colIndex[header].Add(i);
+            }
+
+            // DEBUG: Log all header indices
+            foreach (var kvp in colIndex.OrderBy(k => k.Value[0]))
+            {
+                _logger.LogInformation("Header '{Header}' → indices [{Indices}]",
+                    kvp.Key, string.Join(", ", kvp.Value));
+            }
+
+            // === STEP 3: Get data rows ===
+            var rows = table.SelectNodes(".//tbody/tr[not(contains(@class, 'thead')) and @data-row]") ??
+                       table.SelectNodes(".//tbody/tr[not(contains(@class, 'thead'))]") ??
+                       table.SelectNodes(".//tbody/tr");
+
             if (rows == null || rows.Count == 0)
             {
-                _logger.LogWarning("No valid player rows found in table");
+                _logger.LogWarning("No data rows found in table {TableId}", tableId);
                 return players;
             }
 
+            _logger.LogInformation("Processing {RowCount} rows from table {TableId}", rows.Count, tableId);
+
+            // === STEP 4: Process each row ===
             foreach (var row in rows)
             {
                 try
                 {
                     var cells = row.SelectNodes("./th | ./td");
-                    if (cells == null || cells.Count < 33) continue;
+                    if (cells == null || cells.Count < 5) continue;
+
+                    var playerName = GetCellText(cells, colIndex, "Player");
+                    if (string.IsNullOrWhiteSpace(playerName) ||
+                        playerName.Equals("Player", StringComparison.OrdinalIgnoreCase) ||
+                        playerName.Contains("Squad Total", StringComparison.OrdinalIgnoreCase) ||
+                        playerName.Contains("Opponent Total", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
 
                     var playerLink = cells[0].SelectSingleNode(".//a");
                     var playerRefId = playerLink?.GetAttributeValue("href", "")
                         .Split('/', StringSplitOptions.RemoveEmptyEntries)
                         .ElementAtOrDefault(3) ?? string.Empty;
 
+                    // Minutes logic
+                    var minText = GetCellText(cells, colIndex, "Min");
+                    var ninetyText = GetCellText(cells, colIndex, "90s");
+                    int minutes = ParseInt(minText);
+                    if (minutes == 0 && !string.IsNullOrWhiteSpace(ninetyText) && float.TryParse(ninetyText, out var nineties))
+                    {
+                        minutes = (int)(nineties * 90);
+                    }
+
                     var player = new Player
                     {
-                        PlayerName = CleanText(cells[0].InnerText),
-                        Nation = CleanText(cells[1].InnerText),
-                        Position = CleanText(cells[2].InnerText),
-                        Age = CleanText(cells[3].InnerText),
-                        MatchPlayed = ParseInt(cells[4].InnerText),
-                        Starts = ParseInt(cells[5].InnerText),
-                        Minutes = ParseInt(cells[6].InnerText),
-                        NineteenMinutes = CleanText(cells[7].InnerText),
-                        Goals = ParseInt(cells[8].InnerText),
-                        Assists = ParseInt(cells[9].InnerText),
-                        GoalsAssists = ParseInt(cells[10].InnerText),
-                        NonPenaltyGoals = ParseInt(cells[11].InnerText),
-                        PenaltyKicksMade = ParseInt(cells[12].InnerText),
-                        PenaltyKickAttempted = ParseInt(cells[13].InnerText),
-                        YellowCards = ParseInt(cells[14].InnerText),
-                        RedCards = ParseInt(cells[15].InnerText),
-                        ExpectedGoals = ParseFloat(cells[16].InnerText),
-                        NonPenaltyExpectedGoals = ParseFloat(cells[17].InnerText),
-                        ExpectedAssistedGoals = ParseFloat(cells[18].InnerText),
-                        NonPenaltyExpectedGoalsPlusAssistedGoals = ParseFloat(cells[19].InnerText),
-                        ProgressiveCarries = ParseInt(cells[20].InnerText),
-                        ProgressivePasses = ParseInt(cells[21].InnerText),
-                        ProgressiveReceptions = ParseInt(cells[22].InnerText),
-                        GoalsPer90s = CleanText(cells[23].InnerText),
-                        AssistsPer90s = CleanText(cells[24].InnerText),
-                        GoalsAssistsPer90s = CleanText(cells[25].InnerText),
-                        NonPenaltyGoalsPer90s = CleanText(cells[26].InnerText),
-                        NonPenaltyGoalsAssistsPer90s = CleanText(cells[27].InnerText),
-                        ExpectedGoalsPer90 = CleanText(cells[28].InnerText),
-                        ExpectedAssistedGoalsPer90 = CleanText(cells[29].InnerText),
-                        ExpectedGoalsPlusAssistedGoalsPer90 = CleanText(cells[30].InnerText),
-                        NonPenaltyExpectedGoalsPer90 = CleanText(cells[31].InnerText),
-                        NonPenaltyExpectedGoalsPlusAssistedGoalsPer90 = CleanText(cells[32].InnerText),
+                        PlayerName = playerName,
+                        Nation = GetCellText(cells, colIndex, "Nation"),
+                        Position = GetCellText(cells, colIndex, "Pos"),
+                        Age = GetCellText(cells, colIndex, "Age"),
+                        MatchPlayed = ParseInt(GetCellText(cells, colIndex, "MP")),
+                        Starts = ParseInt(GetCellText(cells, colIndex, "Starts")),
+                        Minutes = minutes,
+                        NineteenMinutes = ninetyText,
                         PlayerRefId = playerRefId
                     };
 
-                    if (!string.IsNullOrEmpty(player.PlayerName) && !player.PlayerName.Equals("Player", StringComparison.OrdinalIgnoreCase))
+                    // === TOTALS (first occurrence) ===
+                    player.Goals = ParseInt(GetCellText(cells, colIndex, "Gls", 0));
+                    player.Assists = ParseInt(GetCellText(cells, colIndex, "Ast", 0));
+                    player.GoalsAssists = ParseInt(GetCellText(cells, colIndex, "G+A", 0));
+                    player.NonPenaltyGoals = ParseInt(GetCellText(cells, colIndex, "G-PK", 0));
+                    player.PenaltyKicksMade = ParseInt(GetCellText(cells, colIndex, "PK", 0));
+                    player.PenaltyKickAttempted = ParseInt(GetCellText(cells, colIndex, "PKatt", 0));
+                    player.YellowCards = ParseInt(GetCellText(cells, colIndex, "CrdY", 0));
+                    player.RedCards = ParseInt(GetCellText(cells, colIndex, "CrdR", 0));
+
+                    // === PER 90 (second occurrence) ===
+                    player.GoalsPer90s = GetCellText(cells, colIndex, "Gls", 1);
+                    player.AssistsPer90s = GetCellText(cells, colIndex, "Ast", 1);
+                    player.GoalsAssistsPer90s = GetCellText(cells, colIndex, "G+A", 1);
+                    player.NonPenaltyGoalsPer90s = GetCellText(cells, colIndex, "G-PK", 1);
+                    player.NonPenaltyGoalsAssistsPer90s = GetCellText(cells, colIndex, "G+A-PK"); // only once
+
+                    // === xG & Advanced (only if exist) ===
+                    if (colIndex.ContainsKey(CleanHeader("xG")))
                     {
-                        players.Add(player);
+                        player.ExpectedGoals = ParseFloat(GetCellText(cells, colIndex, "xG", 0));
+                        player.NonPenaltyExpectedGoals = ParseFloat(GetCellText(cells, colIndex, "npxG", 0));
+                        player.ExpectedAssistedGoals = ParseFloat(GetCellText(cells, colIndex, "xAG", 0));
+                        player.NonPenaltyExpectedGoalsPlusAssistedGoals = ParseFloat(GetCellText(cells, colIndex, "npxG+xAG", 0));
                     }
+
+                    if (colIndex.ContainsKey(CleanHeader("PrgC")))
+                    {
+                        player.ProgressiveCarries = ParseInt(GetCellText(cells, colIndex, "PrgC"));
+                        player.ProgressivePasses = ParseInt(GetCellText(cells, colIndex, "PrgP"));
+                        player.ProgressiveReceptions = ParseInt(GetCellText(cells, colIndex, "PrgR"));
+                    }
+
+                    // === Per90 xG (second group) ===
+                    if (colIndex.ContainsKey(CleanHeader("xG")) && colIndex[CleanHeader("xG")].Count > 1)
+                    {
+                        player.ExpectedGoalsPer90 = GetCellText(cells, colIndex, "xG", 1);
+                        player.ExpectedAssistedGoalsPer90 = GetCellText(cells, colIndex, "xAG", 1);
+                        player.ExpectedGoalsPlusAssistedGoalsPer90 = GetCellText(cells, colIndex, "xG+xAG", 1);
+                        player.NonPenaltyExpectedGoalsPer90 = GetCellText(cells, colIndex, "npxG", 1);
+                        player.NonPenaltyExpectedGoalsPlusAssistedGoalsPer90 = GetCellText(cells, colIndex, "npxG+xAG", 1);
+                    }
+
+                    players.Add(player);
+                    _logger.LogInformation("Added player: {PlayerName} ({Position}) - {Nation}",
+                        player.PlayerName, player.Position, player.Nation);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Error parsing player row - skipping");
+                    _logger.LogWarning(ex, "Error parsing player row in table {TableId}", tableId);
                 }
             }
 
-            _logger.LogInformation("Extracted {Count} players from HTML", players.Count);
+            _logger.LogInformation("Extracted {Count} players from table {TableId}", players.Count, tableId);
             return players;
         });
     }
+private string CleanHeader(string text)
+{
+    if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+
+    return Regex.Replace(text, @"\s+", " ")
+               .Replace("-", "")
+               .Replace("+", "")
+               .Trim()
+               .ToLowerInvariant();
+}
+
+private string GetCellText(
+    HtmlNodeCollection cells,
+    Dictionary<string, List<int>> colIndex,
+    string header,
+    int occurrence = 0)
+{
+    var key = CleanHeader(header);
+
+    if (!colIndex.TryGetValue(key, out var indices) || occurrence >= indices.Count)
+        return string.Empty;
+
+    int idx = indices[occurrence];
+    return idx < cells.Count ? CleanText(cells[idx].InnerText) : string.Empty;
+}
+    // ----  NEW METHOD  ----------------------------------------------------
+    private string? ExtractSquadId(HtmlDocument doc)
+    {
+        // FBref always has a link to the squad page in the header:
+        // <a href="/en/squads/defd54ac/2025-2026/FC-Metaloglobus-Bucuresti-Stats">FC Metaloglobus București</a>
+        var link = doc.DocumentNode.SelectSingleNode("//a[contains(@href,'/en/squads/')]");
+        if (link == null) return null;
+
+        var href = link.GetAttributeValue("href", "");
+        var parts = href.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 3) return null;               // safety
+
+        var id = parts[2];                               // e.g. "defd54ac"
+        _logger.LogDebug("Extracted squad ID {SquadId} from {Href}", id, href);
+        return id;
+    }
+
+    // Optional: generic fallback that looks for a table whose first header row contains a known column
+    private HtmlNode? FindTableByHeaderPattern(HtmlDocument doc, string[] headerNeedles, string tablePurpose)
+    {
+        var tables = doc.DocumentNode.SelectNodes("//table");
+        if (tables == null) return null;
+
+        foreach (var t in tables)
+        {
+            var th = t.SelectSingleNode(".//thead//th");
+            if (th == null) continue;
+
+            var text = CleanText(th.InnerText).ToLowerInvariant();
+            if (headerNeedles.Any(n => text.Contains(n.ToLowerInvariant())))
+            {
+                _logger.LogDebug("Fallback – found {Purpose} table by header pattern", tablePurpose);
+                return t;
+            }
+        }
+        return null;
+    }
+
 
     public async Task<List<SquadStandard>> ExtractSquadStandardTableAsync(string html, string selector)
     {

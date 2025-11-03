@@ -11,6 +11,26 @@ public static class SystemSeeder
         string[] leagues = new[]
         {
             StaticLeague.PremierLeague,
+            StaticLeague.EnglandChampionship,
+            StaticLeague.Liga1,
+            StaticLeague.SuperLig,
+            StaticLeague.ChineseSuperLeague,
+            StaticLeague.ItalySerieA,
+            StaticLeague.FranceLigue1,
+            StaticLeague.FranceLigue2,
+            StaticLeague.SpainLaliga1,
+            StaticLeague.NetherlandsEredivisie,
+            StaticLeague.AustraliaALeague,
+            StaticLeague.SwedenAllsvenskan,
+            StaticLeague.ArgentinaTorneoBetano,
+            StaticLeague.BrazilSerieABetano,
+            StaticLeague.USAMLS,
+            StaticLeague.EcuadorLigaPro,
+            StaticLeague.ColombiPrimeraA,
+            StaticLeague.ChileLigaDePrimera,
+            StaticLeague.SaudiArabiaProfessionalLeague,
+            StaticLeague.MexicoLigaMX,
+            StaticLeague.KoreaKLeague1
         };
 
         var existingLeauge = await dbContext.Leagues.Select(l => l.LeagueName).ToListAsync();

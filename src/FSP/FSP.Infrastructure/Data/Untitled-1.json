@@ -1,0 +1,189 @@
+{
+  "team_a": {
+    "club_id": 3,
+    "club_name": "Como",
+    "nation": "Italy",
+    "formation": "4-2-3-1",
+    "players": [
+      {
+        "player_ref_id": "2482388401284317907",
+        "player_name": "Jean Butez",
+        "position": "GK",
+        "is_starting": true,
+        "quality": "Normal"
+      },
+      {
+        "player_ref_id": "8514415637939589083",
+        "player_name": "Álex Valle",
+        "position": "DF",
+        "is_starting": true,
+        "quality": "Normal"
+      },
+      {
+        "player_ref_id": "3198064521112452677",
+        "player_name": "Stefan Posch",
+        "position": "DF",
+        "is_starting": true,
+        "quality": "Solid"
+      },
+      {
+        "player_ref_id": "7114531159187860529",
+        "player_name": "Diego Carlos",
+        "position": "DF",
+        "is_starting": true,
+        "quality": "Normal"
+      },
+      {
+        "player_ref_id": "3010770749272817978",
+        "player_name": "Jacobo Ramón",
+        "position": "DF",
+        "is_starting": true,
+        "quality": "Shit"
+      },
+      {
+        "player_ref_id": "6071435733909271433",
+        "player_name": "Nicolás Paz",
+        "position": "MF",
+        "is_starting": true,
+        "quality": "VerySolid"
+      },
+      {
+        "player_ref_id": "8662751938059045917",
+        "player_name": "Lucas Da Cunha",
+        "position": "MF",
+        "is_starting": true,
+        "captain": true,
+        "quality": "QuiteSolid"
+      },
+      {
+        "player_ref_id": "6982414214564398607",
+        "player_name": "Maxence Caqueret",
+        "position": "MF",
+        "is_starting": true,
+        "quality": "Solid"
+      },
+      {
+        "player_ref_id": "8689189156259463042",
+        "player_name": "Nicolas-Gerrit Kühn",
+        "position": "FW",
+        "is_starting": true,
+        "quality": "Normal"
+      },
+      {
+        "player_ref_id": "2154549149350515827",
+        "player_name": "Assane Diao",
+        "position": "FW",
+        "is_starting": true,
+        "quality": "VeryImpressive"
+      },
+      {
+        "player_ref_id": "6026638311275015045",
+        "player_name": "Anastasios Douvikas",
+        "position": "FW",
+        "is_starting": true,
+        "quality": "Normal"
+      }
+    ]
+  },
+  "team_b": {
+    "club_id": 4,
+    "club_name": "Hellas Verona",
+    "nation": "Italy",
+    "formation": "3-5-2",
+    "players": [
+      {
+        "player_ref_id": "479315826802359561",
+        "player_name": "Lorenzo Montipò",
+        "position": "GK",
+        "is_starting": true,
+        "captain": true,
+        "quality": "Normal"
+      },
+      {
+        "player_ref_id": "4248868592765077889",
+        "player_name": "Victor Nelsson",
+        "position": "DF",
+        "is_starting": true,
+        "quality": "Solid"
+      },
+      {
+        "player_ref_id": "2839599264269613936",
+        "player_name": "Nicolás Valentini",
+        "position": "DF",
+        "is_starting": true,
+        "quality": "Normal"
+      },
+      {
+        "player_ref_id": "7250443597747194537",
+        "player_name": "Armel Bella Kotchap",
+        "position": "DF",
+        "is_starting": true,
+        "quality": "Shit"
+      },
+      {
+        "player_ref_id": "6077443635842453880",
+        "player_name": "Jean-Daniel Akpa-Akpro",
+        "position": "MF",
+        "is_starting": true,
+        "quality": "Normal"
+      },
+      {
+        "player_ref_id": "586829738474619107",
+        "player_name": "Roberto Gagliardini",
+        "position": "MF",
+        "is_starting": true,
+        "quality": "Normal"
+      },
+      {
+        "player_ref_id": "1386101946784676473",
+        "player_name": "Martin Frese",
+        "position": "DF",
+        "is_starting": true,
+        "quality": "Solid"
+      },
+      {
+        "player_ref_id": "6729721975522754312",
+        "player_name": "Antoine Bernede",
+        "position": "MF",
+        "is_starting": true,
+        "quality": "Normal"
+      },
+      {
+        "player_ref_id": "4922923356159692688",
+        "player_name": "Rafik Belghali",
+        "position": "DF,FW",
+        "is_starting": true,
+        "quality": "Normal"
+      },
+      {
+        "player_ref_id": "1863685630628569300",
+        "player_name": "Gift Orban",
+        "position": "FW",
+        "is_starting": true,
+        "quality": "Solid"
+      },
+      {
+        "player_ref_id": "9170234020243012715",
+        "player_name": "Giovane",
+        "position": "FW",
+        "is_starting": true,
+        "quality": "Solid"
+      }
+    ]
+  },
+  "match_date": "2025-10-30",
+  "venue": "Serie A Italy",
+  "match_type": "League",
+  "team_a_extra_metrics": {
+    "home": true,
+    "team_level": 14,
+    "motivation": true,
+    "recent_form": ["D", "w", "D", "D", "W"]
+  },
+  "team_b_extra_metrics": {
+    "home": false,
+    "team_level": 9,
+    "motivation": true,
+    "recent_form": ["D", "D", "L", "L", "L"]
+  }
+}

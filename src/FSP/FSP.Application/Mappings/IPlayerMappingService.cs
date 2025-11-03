@@ -11,6 +11,10 @@ public interface IPlayerMappingService
     IEnumerable<GoalkeepingDto> ToGoalkeepingDtos(IEnumerable<Goalkeeping> goalkeepings);
     ShootingDto ToShootingDto(Shooting shooting);
     IEnumerable<ShootingDto> ToShootingDtos(IEnumerable<Shooting> shootings);
+    PlayerWithScoreDto ToPlayerWithScoreDto(PlayerWithScore playerWithScore);
+    IEnumerable<PlayerWithScoreDto> ToPlayerWithScoreDtos(IEnumerable<PlayerWithScore> playerWithScores);
+    LineupAnalysisDto ToLineupAnalysisDto(LineupAnalysis lineupAnalysis);
+    TwoTeamComparisonDto ToTwoTeamComparisonDto(TwoTeamComparison twoTeamComparison);
 }
 
 public class PlayerMappingService : IPlayerMappingService
@@ -149,5 +153,97 @@ public class PlayerMappingService : IPlayerMappingService
         }
 
         return shootings.Select(ToShootingDto);
+    }
+
+    public PlayerWithScoreDto ToPlayerWithScoreDto(PlayerWithScore playerWithScore)
+    {
+        if (playerWithScore == null) return new PlayerWithScoreDto();
+
+        return new PlayerWithScoreDto
+        {
+            Player = this.ToPlayerDto(playerWithScore.Player),
+            Score = playerWithScore.Score,
+            PositionCategory = playerWithScore.PositionCategory,
+            PrimaryPosition = playerWithScore.PrimaryPosition,
+            Rank = playerWithScore.Rank
+        };
+    }
+
+    public IEnumerable<PlayerWithScoreDto> ToPlayerWithScoreDtos(IEnumerable<PlayerWithScore> playerWithScores)
+    {
+        if (playerWithScores == null || !playerWithScores.Any())
+        {
+            return Enumerable.Empty<PlayerWithScoreDto>();
+        }
+
+        return playerWithScores.Select(ToPlayerWithScoreDto);
+    }
+
+    public LineupAnalysisDto ToLineupAnalysisDto(LineupAnalysis lineupAnalysis)
+    {
+        if (lineupAnalysis == null) return new LineupAnalysisDto();
+
+        return new LineupAnalysisDto
+        {
+            LineupPlayers = this.ToPlayerWithScoreDtos(lineupAnalysis.LineupPlayers),
+            TotalScore = lineupAnalysis.TotalScore,
+            AverageScore = lineupAnalysis.AverageScore,
+            Formation = lineupAnalysis.Formation,
+            PositionBreakdown = new PositionBreakdownDto
+            {
+                Goalkeepers = lineupAnalysis.PositionBreakdown.Goalkeepers,
+                Defenders = lineupAnalysis.PositionBreakdown.Defenders,
+                Midfielders = lineupAnalysis.PositionBreakdown.Midfielders,
+                Attackers = lineupAnalysis.PositionBreakdown.Attackers,
+                AvgGoalkeeperScore = lineupAnalysis.PositionBreakdown.AvgGoalkeeperScore,
+                AvgDefenderScore = lineupAnalysis.PositionBreakdown.AvgDefenderScore,
+                AvgMidfielderScore = lineupAnalysis.PositionBreakdown.AvgMidfielderScore,
+                AvgAttackerScore = lineupAnalysis.PositionBreakdown.AvgAttackerScore
+            },
+            Strengths = lineupAnalysis.Strengths,
+            Weaknesses = lineupAnalysis.Weaknesses,
+            OverallRating = lineupAnalysis.OverallRating
+        };
+    }
+
+    public TwoTeamComparisonDto ToTwoTeamComparisonDto(TwoTeamComparison twoTeamComparison)
+    {
+        if (twoTeamComparison == null) return new TwoTeamComparisonDto();
+
+        return new TwoTeamComparisonDto
+        {
+            TeamAAnalysis = this.ToLineupAnalysisDto(twoTeamComparison.TeamAAnalysis),
+            TeamBAnalysis = this.ToLineupAnalysisDto(twoTeamComparison.TeamBAnalysis),
+            Comparison = new TeamComparisonDto
+            {
+                TotalScoreAdvantage = twoTeamComparison.Comparison.TotalScoreAdvantage,
+                AverageScoreAdvantage = twoTeamComparison.Comparison.AverageScoreAdvantage,
+                AdvantageTeam = twoTeamComparison.Comparison.AdvantageTeam,
+                AdvantagePercentage = twoTeamComparison.Comparison.AdvantagePercentage,
+                PositionAdvantages = twoTeamComparison.Comparison.PositionAdvantages.Select(pa => new PositionAdvantageDto
+                {
+                    Position = pa.Position,
+                    AdvantageTeam = pa.AdvantageTeam,
+                    TeamAScore = pa.TeamAScore,
+                    TeamBScore = pa.TeamBScore,
+                    AdvantageMargin = pa.AdvantageMargin
+                }).ToList()
+            },
+            Prediction = new MatchPredictionDto
+            {
+                PredictedWinner = twoTeamComparison.Prediction.PredictedWinner,
+                Confidence = twoTeamComparison.Prediction.Confidence,
+                PredictedScore = twoTeamComparison.Prediction.PredictedScore,
+                KeyFactors = twoTeamComparison.Prediction.KeyFactors
+            },
+            KeyBattles = twoTeamComparison.KeyBattles.Select(b => new PlayerBattleDto
+            {
+                Position = b.Position,
+                TeamAPlayer = b.TeamAPlayer != null ? this.ToPlayerWithScoreDto(b.TeamAPlayer) : null,
+                TeamBPlayer = b.TeamBPlayer != null ? this.ToPlayerWithScoreDto(b.TeamBPlayer) : null,
+                Advantage = b.Advantage,
+                AdvantageMargin = b.AdvantageMargin
+            }).ToList()
+        };
     }
 }

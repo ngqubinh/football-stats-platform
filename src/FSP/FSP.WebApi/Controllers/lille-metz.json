@@ -1,0 +1,150 @@
+{
+  "team_a": {
+    "club_id": 5,
+    "club_name": "Lille",
+    "formation": "4-2-3-1",
+    "players": [
+      {
+        "player_ref_id": "5848532797886811118",
+        "player_name": "Berke Özer",
+        "position": "GK",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3950306308849995295",
+        "player_name": "Aïssa Mandi",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3085703956742848461",
+        "player_name": "Chancel Mbemba",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "6608457440753725548",
+        "player_name": "Nathan Ngoy",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "5622012748036701010",
+        "player_name": "Romain Perraud",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3084144346502618618",
+        "player_name": "Benjamin André",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2723806758410523536",
+        "player_name": "Ayyoub Bouaddi",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "6955161565067718927",
+        "player_name": "Filipe Correia",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3986461917951362332",
+        "player_name": "Hákon Arnar Haraldsson",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2063902277790099757",
+        "player_name": "Matías Fernández-Pardo",
+        "position": "FW",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "1943553194979700057",
+        "player_name": "Hamza Igamane",
+        "position": "FW",
+        "is_starting": true
+      }
+    ]
+  },
+  "team_b": {
+    "club_id": 6,
+    "club_name": "Metz",
+    "formation": "4-1-2-3",
+    "players": [
+      {
+        "player_ref_id": "2138316862815930831",
+        "player_name": "Jonathan Fischer",
+        "position": "GK",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2432110825485696411",
+        "player_name": "Jean-Philippe Gbamin",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "916047699561426597",
+        "player_name": "Terry Yegbe",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3725538159859068511",
+        "player_name": "Koffi Kouao",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "1423898126960031957",
+        "player_name": "Alpha Touré",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "6773120081506686596",
+        "player_name": "Benjamin Stambouli",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2514986056839438358",
+        "player_name": "Jessy Deminguet",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2082100275162614691",
+        "player_name": "Giorgi Abuashvili",
+        "position": "FW",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "6463631761943005510",
+        "player_name": "Gauthier Hein",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "6723973992930262104",
+        "player_name": "Cheikh Tidiane Sabaly",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2373878210109259000",
+        "player_name": "Habib Diallo",
+        "position": "FW",
+        "is_starting": true
+      }
+    ]
+  },
+  "match_date": "2025-10-26",
+  "venue": "Stade Pierre-Mauroy"
+}

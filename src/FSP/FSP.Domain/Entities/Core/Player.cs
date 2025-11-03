@@ -64,3 +64,12 @@ public class PlayerDetails
     public int PlayerId { get; set; }
     public Player Player { get; set; } = null!;
 }
+
+public class PlayerWithScore
+{
+    public Player Player { get; set; } = null!;
+    public float Score { get; set; }
+    public int Rank { get; set; }
+    public string PositionCategory { get; set; } = string.Empty;
+    public string PrimaryPosition { get; set; } = string.Empty;
+}

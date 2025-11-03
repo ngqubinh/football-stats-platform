@@ -1,0 +1,164 @@
+{
+  "team_a": {
+    "club_id": 2,
+    "club_name": "Lecce",
+    "formation": "4-3-3",
+    "players": [
+      {
+        "player_ref_id": "1734993830400603499",
+        "player_name": "Wladimiro Falcone",
+        "position": "GK",
+        "is_starting": true,
+        "captain": true
+      },
+      {
+        "player_ref_id": "3714492663062314688",
+        "player_name": "Danilo Veiga",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "4620612786628941571",
+        "player_name": "Kialonda",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3591051116465265288",
+        "player_name": "Tiago Gabriel",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3152672090421509727",
+        "player_name": "Antonino Gallo",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2575933306871372312",
+        "player_name": "Lassana Coulibaly",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2267265986396873202",
+        "player_name": "Ylber Ramadani",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "7677362461362293239",
+        "player_name": "Medon Berisha",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "7864554403299778539",
+        "player_name": "Santiago Pierotti",
+        "position": "FW",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "4119038112500014523",
+        "player_name": "Francesco Camarda",
+        "position": "FW",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "4556423738824783372",
+        "player_name": "Lameck Banda",
+        "position": "FW",
+        "is_starting": true
+      }
+    ]
+  },
+  "team_b": {
+    "club_id": 1,
+    "club_name": "Napoli",
+    "formation": "4-3-3",
+    "players": [
+      {
+        "player_ref_id": "5148368488296172332",
+        "player_name": "Vanja Milinković-Savić",
+        "position": "GK",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "5761884316595834348",
+        "player_name": "Giovanni Di Lorenzo",
+        "position": "DF",
+        "is_starting": true,
+        "captain": true
+      },
+      {
+        "player_ref_id": "2965307456292049054",
+        "player_name": "Alessandro Buongiorno",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "710358953068262964",
+        "player_name": "Juan Jesus",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "7797461512145570960",
+        "player_name": "Mathías Olivera",
+        "position": "DF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "7107528212862808787",
+        "player_name": "Andre-Frank Zambo Anguissa",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2627742793435919094",
+        "player_name": "Billy Gilmour",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "409865455962194819",
+        "player_name": "Elif Elmas",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "6153234748718784358",
+        "player_name": "Matteo Politano",
+        "position": "MF",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "3634608225226890273",
+        "player_name": "Lorenzo Lucca",
+        "position": "FW",
+        "is_starting": true
+      },
+      {
+        "player_ref_id": "2127726497647812013",
+        "player_name": "Noa Lang",
+        "position": "MF,FW",
+        "is_starting": true
+      }
+    ]
+  },
+  "match_date": "2025-10-29",
+  "venue": "Stadio Via del Mare",
+   "team_a_extra_metrics": {
+    "home": true,
+    "team_level": 4,
+    "motivation": false,
+    "recent_form": ["L", "D", "W", "D", "L"]
+  },
+  "team_b_extra_metrics": {
+    "home": false,
+    "team_level": 19,
+    "motivation": true,
+    "recent_form": ["W", "L", "W", "L", "W"]
+  }
+}

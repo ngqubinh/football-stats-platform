@@ -252,7 +252,7 @@ public class SimpleCrawlerService : ISimpleCrawlerService
             await Task.WhenAll(tasks);
             _logger.LogInformation("Completed all data extraction from {Url}", url);
 
-            //await this.SaveCompleteTeamData(completeTeamData, teamName);
+            await this.SaveCompleteTeamData(completeTeamData, teamName);
 
             return Result<CompleteTeamData>.Ok(completeTeamData);
         }
